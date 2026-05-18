@@ -1,0 +1,1797 @@
+---
+const dockApps = [
+    { name: "Finder", icon: "/dock-icons/finder-beta-2-liquid-glass.png" },
+    { name: "Arc", icon: "/dock-icons/arc.png" },
+    { name: "Settings", icon: "/dock-icons/settings.png" },
+    { name: "Spotify", icon: "/dock-icons/spotify-liquid-glass-dark.png" },
+];
+
+const desktopFiles = [
+    {
+        name: "lake.jpg",
+        thumbnail: "/desktop-examples/alpine-lake.jpg",
+        preview: "/desktop-examples/lake-original.jpg",
+        kind: "image",
+    },
+    {
+        name: "portrait.jpg",
+        thumbnail: "/desktop-examples/city-portrait.jpg",
+        preview: "/desktop-examples/portrait-original.jpg",
+        kind: "image",
+    },
+    {
+        name: "studio.jpg",
+        thumbnail: "/desktop-examples/studio-shot.jpg",
+        preview: "/desktop-examples/studio-original.jpg",
+        kind: "image",
+    },
+    {
+        name: "product.mp4",
+        thumbnail: "/desktop-examples/product-reel.jpg",
+        preview: "/desktop-examples/product-reel.mp4",
+        kind: "video",
+    },
+    {
+        name: "launch.mp4",
+        thumbnail: "/desktop-examples/launch-clip.jpg",
+        preview: "/desktop-examples/launch-clip.mp4",
+        kind: "video",
+    },
+];
+---
+
+<div class="desktop-demo" aria-label="Mock macOS desktop">
+    <div class="wallpaper" aria-hidden="true"></div>
+
+    <div class="menu-bar">
+        <div class="menu-left">
+            <img
+                class="apple-mark"
+                src="/menu-icons/apple.logo.svg"
+                alt=""
+                draggable="false"
+            />
+            <strong>Kompakt</strong>
+        </div>
+        <div class="menu-right">
+            <img
+                class="menu-icon kompakt-menu-icon"
+                src="/menu-icons/kompakt-menubar.svg"
+                alt=""
+                draggable="false"
+            />
+            <img
+                class="menu-icon battery-icon"
+                src="/menu-icons/battery.100percent.bolt.svg"
+                alt=""
+                draggable="false"
+            />
+            <img
+                class="menu-icon wifi-icon"
+                src="/menu-icons/wifi.svg"
+                alt=""
+                draggable="false"
+            />
+            <img
+                class="menu-icon switch-icon"
+                src="/menu-icons/switch.2.svg"
+                alt=""
+                draggable="false"
+            />
+            <time class="menu-clock" datetime="" data-menu-clock
+                >Mon May 18 23:04</time
+            >
+        </div>
+    </div>
+
+    <div class="desktop-files" aria-label="Desktop files">
+        {
+            desktopFiles.map((file, index) => (
+                <div
+                    class:list={["desktop-file", `desktop-file-${index + 1}`]}
+                    data-file-name={file.name}
+                    data-file-kind={file.kind}
+                    data-file-preview={file.preview}
+                    tabindex="0"
+                    role="button"
+                    aria-label={`${file.name} file`}
+                >
+                    <div class="file-thumbnail">
+                        <img
+                            src={file.thumbnail}
+                            alt=""
+                            loading="eager"
+                            decoding="async"
+                            draggable="false"
+                        />
+                        {file.kind === "video" && (
+                            <span class="video-badge">▶</span>
+                        )}
+                    </div>
+                    <span class="file-name">{file.name}</span>
+                </div>
+            ))
+        }
+    </div>
+
+    <aside class="dropzone-demo" data-dropzone aria-hidden="true">
+        <div class="dropzone-blur" aria-hidden="true"></div>
+        <div class="dropzone-bloom" aria-hidden="true"></div>
+        <div class="dropzone-center">
+            <div class="dropzone-preview-stack" data-dropzone-previews></div>
+            <div class="dropzone-title" data-dropzone-title>Kompakt files</div>
+            <div class="dropzone-completion" data-dropzone-completion hidden>
+                <strong>42% smaller</strong>
+                <span>38.4 MB -> 22.3 MB</span>
+            </div>
+            <div class="escape-hint">
+                <kbd>ESC</kbd>
+                <span>to hide</span>
+            </div>
+        </div>
+    </aside>
+
+    <div class="dock" aria-label="macOS Dock">
+        {
+            dockApps.map((app) => (
+                <div
+                    class:list={[
+                        "dock-icon",
+                        { kompakt: app.name === "Kompakt" },
+                    ]}
+                    title={app.name}
+                >
+                    {app.icon ? (
+                        <img
+                            src={app.icon}
+                            alt=""
+                            loading="eager"
+                            decoding="async"
+                            draggable="false"
+                        />
+                    ) : (
+                        <span>{app.name[0]}</span>
+                    )}
+                </div>
+            ))
+        }
+    </div>
+</div>
+
+<script>
+    const clock = document.querySelector("[data-menu-clock]");
+    const desktop = document.querySelector(".desktop-demo");
+    const desktopFiles =
+        document.querySelectorAll<HTMLElement>(".desktop-file");
+    const dropzone = document.querySelector<HTMLElement>("[data-dropzone]");
+    const dropzoneTitle = document.querySelector<HTMLElement>(
+        "[data-dropzone-title]",
+    );
+    const dropzonePreviews = document.querySelector<HTMLElement>(
+        "[data-dropzone-previews]",
+    );
+    const dropzoneCompletion = document.querySelector<HTMLElement>(
+        "[data-dropzone-completion]",
+    );
+    let activePreview: HTMLElement | null = null;
+    let activeDropFiles: HTMLElement[] = [];
+    let dropzoneDismissTimer: number | undefined;
+    let isDropzoneSuppressedForDrag = false;
+    let previewZIndex = 10;
+
+    const formatMenuClock = (date: Date) => {
+        const weekday = new Intl.DateTimeFormat(undefined, {
+            weekday: "short",
+        }).format(date);
+        const month = new Intl.DateTimeFormat(undefined, {
+            month: "short",
+        }).format(date);
+        const day = new Intl.DateTimeFormat(undefined, {
+            day: "numeric",
+        }).format(date);
+        const time = new Intl.DateTimeFormat(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        }).format(date);
+
+        return `${weekday} ${month} ${day} ${time}`;
+    };
+
+    const updateMenuClock = () => {
+        if (!(clock instanceof HTMLTimeElement)) return;
+
+        const now = new Date();
+        clock.textContent = formatMenuClock(now);
+        clock.dateTime = now.toISOString();
+    };
+
+    updateMenuClock();
+    setInterval(updateMenuClock, 30_000);
+
+    const clearSelectedFiles = () => {
+        desktopFiles.forEach((file) => {
+            file.classList.remove("is-selected");
+            file.setAttribute("aria-pressed", "false");
+        });
+    };
+
+    const selectFile = (file: HTMLElement, additive = false) => {
+        if (!additive) clearSelectedFiles();
+        file.classList.add("is-selected");
+        file.setAttribute("aria-pressed", "true");
+    };
+
+    const setFileSelected = (file: HTMLElement, selected: boolean) => {
+        file.classList.toggle("is-selected", selected);
+        file.setAttribute("aria-pressed", selected ? "true" : "false");
+    };
+
+    const closePreview = () => {
+        activePreview?.remove();
+        activePreview = null;
+    };
+
+    const getDesktopDragBounds = (element: HTMLElement) => {
+        if (!(desktop instanceof HTMLElement)) {
+            return { minLeft: 0, minTop: 0, maxLeft: 0, maxTop: 0 };
+        }
+
+        const menuBar = desktop.querySelector<HTMLElement>(".menu-bar");
+        const dock = desktop.querySelector<HTMLElement>(".dock");
+        const menuBottom = menuBar
+            ? menuBar.offsetTop + menuBar.offsetHeight
+            : 0;
+        const dockTop = dock ? dock.offsetTop : desktop.clientHeight;
+        const padding = 10;
+
+        return {
+            minLeft: padding,
+            minTop: menuBottom + padding,
+            maxLeft: desktop.clientWidth - element.offsetWidth - padding,
+            maxTop: dockTop - element.offsetHeight - padding,
+        };
+    };
+
+    const clampToDesktop = (
+        element: HTMLElement,
+        left: number,
+        top: number,
+    ) => {
+        const bounds = getDesktopDragBounds(element);
+
+        return {
+            left: Math.max(bounds.minLeft, Math.min(bounds.maxLeft, left)),
+            top: Math.max(bounds.minTop, Math.min(bounds.maxTop, top)),
+        };
+    };
+
+    const intersects = (a: DOMRect, b: DOMRect) =>
+        a.left < b.right &&
+        a.right > b.left &&
+        a.top < b.bottom &&
+        a.bottom > b.top;
+
+    const summarizeFiles = (files: HTMLElement[]) => {
+        const count = files.length || 1;
+        const kinds = new Set(files.map((file) => file.dataset.fileKind ?? "file"));
+        const kind = kinds.size === 1 ? [...kinds][0] : "file";
+        const noun =
+            kind === "image"
+                ? count === 1 ? "image" : "images"
+                : kind === "video"
+                  ? count === 1 ? "video" : "videos"
+                  : count === 1 ? "file" : "files";
+
+        return { count, noun };
+    };
+
+    const renderDropzonePreviews = (files: HTMLElement[]) => {
+        if (!dropzonePreviews) return;
+
+        dropzonePreviews.replaceChildren();
+        dropzonePreviews.classList.toggle("is-single-preview", files.length === 1);
+
+        files.slice(0, 3).forEach((file, index) => {
+            const card = document.createElement("div");
+            card.className = `dropzone-preview-card preview-card-${index + 1}`;
+
+            const thumbnail = file.querySelector<HTMLImageElement>(".file-thumbnail img");
+            if (thumbnail) {
+                const image = document.createElement("img");
+                image.src = thumbnail.src;
+                image.alt = "";
+                image.draggable = false;
+                card.append(image);
+            }
+
+            if (file.dataset.fileKind === "video") {
+                const badge = document.createElement("span");
+                badge.textContent = "▶";
+                card.append(badge);
+            }
+
+            dropzonePreviews.append(card);
+        });
+
+        if (files.length > 3) {
+            const count = document.createElement("b");
+            count.className = "dropzone-preview-count";
+            count.textContent = `+${files.length - 3}`;
+            dropzonePreviews.append(count);
+        }
+    };
+
+    const setDropzonePhase = (
+        phase: "idle" | "targeted" | "processing" | "finished",
+        files = activeDropFiles,
+    ) => {
+        if (!dropzone || !dropzoneTitle || !dropzoneCompletion) return;
+
+        const summary = summarizeFiles(files);
+        dropzone.dataset.phase = phase;
+        dropzoneCompletion.hidden = phase !== "finished";
+        dropzonePreviews?.toggleAttribute(
+            "hidden",
+            phase === "idle" || phase === "targeted",
+        );
+
+        if (phase === "processing") {
+            dropzoneTitle.textContent = `Kompakting ${summary.noun}`;
+        } else if (phase === "finished") {
+            dropzoneTitle.textContent = "";
+        } else {
+            dropzoneTitle.textContent = `Kompakt ${summary.noun}`;
+        }
+    };
+
+    const showDropzone = (files: HTMLElement[]) => {
+        if (!dropzone) return;
+        if (isDropzoneSuppressedForDrag) return;
+
+        window.clearTimeout(dropzoneDismissTimer);
+        activeDropFiles = files;
+        dropzone.classList.add("is-visible");
+        dropzone.setAttribute("aria-hidden", "false");
+        renderDropzonePreviews(files);
+        setDropzonePhase("idle", files);
+    };
+
+    const hideDropzone = () => {
+        if (!dropzone) return;
+
+        activeDropFiles = [];
+        dropzone.classList.remove("is-visible", "is-targeted");
+        dropzone.setAttribute("aria-hidden", "true");
+        dropzone.dataset.phase = "idle";
+        window.clearTimeout(dropzoneDismissTimer);
+    };
+
+    const isOverDropzone = (event: PointerEvent) => {
+        if (!dropzone?.classList.contains("is-visible")) return false;
+
+        const rect = dropzone.getBoundingClientRect();
+        return (
+            event.clientX >= rect.left &&
+            event.clientX <= rect.right &&
+            event.clientY >= rect.top &&
+            event.clientY <= rect.bottom
+        );
+    };
+
+    const updateDropzoneTarget = (event: PointerEvent) => {
+        if (!dropzone?.classList.contains("is-visible")) return;
+
+        const targeted = isOverDropzone(event);
+        dropzone.classList.toggle("is-targeted", targeted);
+        if (targeted && dropzoneTitle) {
+            const rect = dropzone.getBoundingClientRect();
+            const normalizedX = ((event.clientX - rect.left) / Math.max(rect.width, 1) - 0.5) * 2;
+            const normalizedY = ((event.clientY - rect.top) / Math.max(rect.height, 1) - 0.5) * 2;
+            const offsetX = normalizedX * 38 + Math.max(0, normalizedX) * 8;
+            const offsetY = normalizedY * 32;
+
+            dropzoneTitle.style.setProperty("--magnet-x", `${offsetX}px`);
+            dropzoneTitle.style.setProperty("--magnet-y", `${offsetY}px`);
+        } else if (dropzoneTitle) {
+            dropzoneTitle.style.setProperty("--magnet-x", "0px");
+            dropzoneTitle.style.setProperty("--magnet-y", "0px");
+        }
+        setDropzonePhase(targeted ? "targeted" : "idle");
+    };
+
+    const simulateDropzoneCompression = (files: HTMLElement[]) => {
+        if (!dropzone) return;
+        if (isDropzoneSuppressedForDrag) return;
+
+        dropzone.classList.remove("is-targeted");
+        renderDropzonePreviews(files);
+        setDropzonePhase("processing", files);
+
+        window.clearTimeout(dropzoneDismissTimer);
+        dropzoneDismissTimer = window.setTimeout(() => {
+            setDropzonePhase("finished", files);
+
+            dropzoneDismissTimer = window.setTimeout(() => {
+                hideDropzone();
+            }, 1650);
+        }, 2200);
+    };
+
+    const getMediaSize = (source: HTMLImageElement | HTMLVideoElement) => {
+        if (source instanceof HTMLImageElement) {
+            return {
+                width: source.naturalWidth || 900,
+                height: source.naturalHeight || 600,
+            };
+        }
+
+        return {
+            width: source.videoWidth || 720,
+            height: source.videoHeight || 960,
+        };
+    };
+
+    const waitForMediaSize = (source: HTMLImageElement | HTMLVideoElement) =>
+        new Promise<{ width: number; height: number }>((resolve) => {
+            const finish = () => resolve(getMediaSize(source));
+
+            if (
+                source instanceof HTMLImageElement &&
+                source.complete &&
+                source.naturalWidth
+            ) {
+                finish();
+                return;
+            }
+
+            if (
+                source instanceof HTMLVideoElement &&
+                source.readyState >= 1 &&
+                source.videoWidth
+            ) {
+                finish();
+                return;
+            }
+
+            source.addEventListener(
+                source instanceof HTMLImageElement ? "load" : "loadedmetadata",
+                finish,
+                {
+                    once: true,
+                },
+            );
+            source.addEventListener(
+                "error",
+                () => resolve({ width: 900, height: 600 }),
+                { once: true },
+            );
+        });
+
+    const openPreview = async (file: HTMLElement) => {
+        if (!(desktop instanceof HTMLElement)) return;
+
+        const name = file.dataset.fileName ?? "Preview";
+        const kind = file.dataset.fileKind ?? "image";
+        const preview = file.dataset.filePreview;
+
+        if (!preview) return;
+
+        closePreview();
+
+    const previewWindow = document.createElement("section");
+    previewWindow.className = "preview-window";
+    previewWindow.style.visibility = "hidden";
+    previewWindow.style.zIndex = String(previewZIndex++);
+        previewWindow.setAttribute("aria-label", `${name} preview`);
+
+        const chrome = document.createElement("div");
+        chrome.className = "preview-chrome";
+
+    const controls = document.createElement("div");
+    controls.className = "preview-controls";
+    const closeButton = document.createElement("button");
+    closeButton.className = "preview-close";
+    closeButton.type = "button";
+    closeButton.setAttribute("aria-label", "Close preview");
+    closeButton.addEventListener("pointerdown", (event) => event.stopPropagation());
+    closeButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      closePreview();
+    });
+
+    const minimizeButton = document.createElement("button");
+    minimizeButton.type = "button";
+    minimizeButton.disabled = true;
+    minimizeButton.setAttribute("aria-label", "Minimize disabled");
+
+    const zoomButton = document.createElement("button");
+    zoomButton.type = "button";
+    zoomButton.disabled = true;
+    zoomButton.setAttribute("aria-label", "Zoom disabled");
+
+    controls.append(closeButton, minimizeButton, zoomButton);
+
+        const title = document.createElement("span");
+        title.className = "preview-title";
+        title.textContent = name;
+
+        chrome.append(controls, title);
+
+        const mediaWrap = document.createElement("div");
+        mediaWrap.className = "preview-media";
+
+        let mediaElement: HTMLImageElement | HTMLVideoElement;
+
+        if (kind === "video") {
+            const video = document.createElement("video");
+            video.src = preview;
+            video.controls = true;
+            video.autoplay = true;
+            video.muted = true;
+            video.playsInline = true;
+            mediaWrap.append(video);
+            mediaElement = video;
+        } else {
+            const image = document.createElement("img");
+            image.src = preview;
+            image.alt = "";
+            mediaWrap.append(image);
+            mediaElement = image;
+        }
+
+        previewWindow.append(chrome, mediaWrap);
+        desktop.append(previewWindow);
+        activePreview = previewWindow;
+
+        const mediaSize = await waitForMediaSize(mediaElement);
+        if (activePreview !== previewWindow) return;
+
+        const bounds = getDesktopDragBounds(previewWindow);
+        const chromeHeight = chrome.offsetHeight || 38;
+        const maxWidth = Math.min(
+            760,
+            Math.max(320, desktop.clientWidth * 0.68),
+            bounds.maxLeft - bounds.minLeft,
+        );
+        const maxMediaHeight = Math.min(
+            560,
+            Math.max(220, desktop.clientHeight * 0.62),
+            bounds.maxTop - bounds.minTop - chromeHeight,
+        );
+        const minWidth = 280;
+        const ratio = mediaSize.width / mediaSize.height;
+        let mediaWidth = Math.min(
+            maxWidth,
+            Math.max(minWidth, mediaSize.width),
+        );
+        let mediaHeight = mediaWidth / ratio;
+
+        if (mediaHeight > maxMediaHeight) {
+            mediaHeight = maxMediaHeight;
+            mediaWidth = mediaHeight * ratio;
+        }
+
+        mediaWidth = Math.max(minWidth, Math.min(maxWidth, mediaWidth));
+        mediaHeight = Math.min(maxMediaHeight, mediaHeight);
+
+        previewWindow.style.width = `${Math.round(mediaWidth)}px`;
+        mediaWrap.style.height = `${Math.round(mediaHeight)}px`;
+
+        const centered = clampToDesktop(
+            previewWindow,
+            (desktop.clientWidth - previewWindow.offsetWidth) / 2,
+            (desktop.clientHeight - previewWindow.offsetHeight) / 2,
+        );
+
+    previewWindow.style.left = `${centered.left}px`;
+    previewWindow.style.top = `${centered.top}px`;
+    previewWindow.style.transform = "none";
+
+        const fileRect = file.getBoundingClientRect();
+        const desktopRect = desktop.getBoundingClientRect();
+        const originX =
+            fileRect.left -
+            desktopRect.left +
+            fileRect.width / 2 -
+            centered.left;
+        const originY =
+            fileRect.top - desktopRect.top + fileRect.height / 2 - centered.top;
+
+    previewWindow.style.setProperty("--preview-origin-x", `${originX}px`);
+    previewWindow.style.setProperty("--preview-origin-y", `${originY}px`);
+    previewWindow.style.visibility = "visible";
+    previewWindow.classList.add("is-opening");
+        previewWindow.addEventListener(
+            "animationend",
+            () => previewWindow.classList.remove("is-opening"),
+            { once: true },
+        );
+
+        if (mediaElement instanceof HTMLVideoElement) {
+            void mediaElement.play().catch(() => {});
+        }
+
+    makePreviewDraggable(previewWindow, chrome);
+  };
+
+    const makePreviewDraggable = (
+        previewWindow: HTMLElement,
+        handle: HTMLElement,
+    ) => {
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.target instanceof HTMLElement && event.target.closest(".preview-controls")) return;
+
+      const pointerEvent = event as PointerEvent;
+            handle.setPointerCapture(pointerEvent.pointerId);
+
+            const startX = pointerEvent.clientX;
+            const startY = pointerEvent.clientY;
+            const startLeft = previewWindow.offsetLeft;
+            const startTop = previewWindow.offsetTop;
+
+            const movePreview = (moveEvent: PointerEvent) => {
+                const position = clampToDesktop(
+                    previewWindow,
+                    startLeft + moveEvent.clientX - startX,
+                    startTop + moveEvent.clientY - startY,
+                );
+
+                previewWindow.style.left = `${position.left}px`;
+                previewWindow.style.top = `${position.top}px`;
+                previewWindow.style.transform = "none";
+            };
+
+            const stopMove = () => {
+                previewWindow.removeEventListener("pointermove", movePreview);
+                previewWindow.removeEventListener("pointerup", stopMove);
+                previewWindow.removeEventListener("pointercancel", stopMove);
+            };
+
+            previewWindow.addEventListener("pointermove", movePreview);
+            previewWindow.addEventListener("pointerup", stopMove);
+            previewWindow.addEventListener("pointercancel", stopMove);
+        });
+    };
+
+    desktop?.addEventListener("pointerdown", (event) => {
+        if (!(desktop instanceof HTMLElement) || event.button !== 0) return;
+
+        const target = event.target;
+        const startedOnDesktop =
+            target instanceof HTMLElement &&
+            !target.closest(".desktop-file, .dock, .menu-bar, .preview-window");
+
+        if (!startedOnDesktop) return;
+
+        const pointerEvent = event as PointerEvent;
+        const desktopRect = desktop.getBoundingClientRect();
+        const bounds = getDesktopDragBounds(document.createElement("div"));
+        const startLeft = Math.max(
+            bounds.minLeft,
+            Math.min(bounds.maxLeft, pointerEvent.clientX - desktopRect.left),
+        );
+        const startTop = Math.max(
+            bounds.minTop,
+            Math.min(bounds.maxTop, pointerEvent.clientY - desktopRect.top),
+        );
+        const additive =
+            pointerEvent.metaKey ||
+            pointerEvent.ctrlKey ||
+            pointerEvent.shiftKey;
+        const initiallySelected = new Set(
+            Array.from(desktopFiles).filter((file) =>
+                file.classList.contains("is-selected"),
+            ),
+        );
+
+        if (!additive) clearSelectedFiles();
+
+        const marquee = document.createElement("div");
+        marquee.className = "selection-marquee";
+        marquee.style.left = `${startLeft}px`;
+        marquee.style.top = `${startTop}px`;
+        desktop.append(marquee);
+
+        if (target instanceof HTMLElement) {
+            target.setPointerCapture(pointerEvent.pointerId);
+        }
+
+        const updateMarquee = (moveEvent: PointerEvent) => {
+            const currentLeft = Math.max(
+                bounds.minLeft,
+                Math.min(bounds.maxLeft, moveEvent.clientX - desktopRect.left),
+            );
+            const currentTop = Math.max(
+                bounds.minTop,
+                Math.min(bounds.maxTop, moveEvent.clientY - desktopRect.top),
+            );
+            const left = Math.min(startLeft, currentLeft);
+            const top = Math.min(startTop, currentTop);
+            const width = Math.abs(currentLeft - startLeft);
+            const height = Math.abs(currentTop - startTop);
+
+            marquee.style.left = `${left}px`;
+            marquee.style.top = `${top}px`;
+            marquee.style.width = `${width}px`;
+            marquee.style.height = `${height}px`;
+
+            const marqueeRect = marquee.getBoundingClientRect();
+
+            desktopFiles.forEach((file) => {
+                const shouldSelect = intersects(
+                    marqueeRect,
+                    file.getBoundingClientRect(),
+                );
+                setFileSelected(
+                    file,
+                    shouldSelect || (additive && initiallySelected.has(file)),
+                );
+            });
+        };
+
+    const stopMarquee = () => {
+      window.removeEventListener("pointermove", updateMarquee);
+      window.removeEventListener("pointerup", stopMarquee);
+      window.removeEventListener("pointercancel", stopMarquee);
+      marquee.classList.add("is-closing");
+      marquee.addEventListener("transitionend", () => marquee.remove(), { once: true });
+      window.setTimeout(() => marquee.remove(), 180);
+    };
+
+        window.addEventListener("pointermove", updateMarquee);
+        window.addEventListener("pointerup", stopMarquee);
+        window.addEventListener("pointercancel", stopMarquee);
+    });
+
+    window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            isDropzoneSuppressedForDrag = true;
+            hideDropzone();
+        }
+    });
+
+    desktopFiles.forEach((file) => {
+        let didDrag = false;
+
+        file.setAttribute("aria-pressed", "false");
+
+        file.addEventListener("click", (event) => {
+            if (didDrag) {
+                didDrag = false;
+                return;
+            }
+
+            selectFile(file, event.metaKey || event.ctrlKey || event.shiftKey);
+        });
+
+        file.addEventListener("dblclick", () => {
+            selectFile(file);
+            openPreview(file);
+        });
+
+        file.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                selectFile(file);
+                openPreview(file);
+            }
+        });
+
+        file.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0) return;
+
+            const pointerEvent = event as PointerEvent;
+            if (!(desktop instanceof HTMLElement)) return;
+
+            file.setPointerCapture(pointerEvent.pointerId);
+
+            const startX = pointerEvent.clientX;
+            const startY = pointerEvent.clientY;
+            const desktopRect = desktop.getBoundingClientRect();
+            const shouldDragSelection = file.classList.contains("is-selected");
+            const draggedFiles = shouldDragSelection
+                ? Array.from(desktopFiles).filter((desktopFile) =>
+                      desktopFile.classList.contains("is-selected"),
+                  )
+                : [file];
+            const dragStarts = draggedFiles.map((draggedFile) => {
+                const rect = draggedFile.getBoundingClientRect();
+                const left = rect.left - desktopRect.left;
+                const top = rect.top - desktopRect.top;
+
+                draggedFile.style.left = `${left}px`;
+                draggedFile.style.top = `${top}px`;
+
+                return { file: draggedFile, left, top };
+            });
+            let dragProxies: HTMLElement[] = [];
+            const selectionBounds = dragStarts.reduce(
+                (bounds, item) => ({
+                    minDeltaX: Math.max(
+                        bounds.minDeltaX,
+                        getDesktopDragBounds(item.file).minLeft - item.left,
+                    ),
+                    maxDeltaX: Math.min(
+                        bounds.maxDeltaX,
+                        getDesktopDragBounds(item.file).maxLeft - item.left,
+                    ),
+                    minDeltaY: Math.max(
+                        bounds.minDeltaY,
+                        getDesktopDragBounds(item.file).minTop - item.top,
+                    ),
+                    maxDeltaY: Math.min(
+                        bounds.maxDeltaY,
+                        getDesktopDragBounds(item.file).maxTop - item.top,
+                    ),
+                }),
+                {
+                    minDeltaX: Number.NEGATIVE_INFINITY,
+                    maxDeltaX: Number.POSITIVE_INFINITY,
+                    minDeltaY: Number.NEGATIVE_INFINITY,
+                    maxDeltaY: Number.POSITIVE_INFINITY,
+                },
+            );
+
+            const ensureDragProxies = () => {
+                if (dragProxies.length > 0) return;
+
+                dragProxies = dragStarts.map((item) => {
+                    const proxy = item.file.cloneNode(true) as HTMLElement;
+                    proxy.classList.add("drag-proxy");
+                    proxy.classList.remove("is-selected", "is-dragging");
+                    proxy.removeAttribute("id");
+                    proxy.removeAttribute("role");
+                    proxy.removeAttribute("tabindex");
+                    proxy.setAttribute("aria-hidden", "true");
+                    proxy.style.left = `${item.left}px`;
+                    proxy.style.top = `${item.top}px`;
+                    desktop.append(proxy);
+                    return proxy;
+                });
+            };
+
+            const removeDragProxies = () => {
+                dragProxies.forEach((proxy) => proxy.remove());
+                dragProxies = [];
+            };
+
+            const animateDragProxiesHome = (onFinished: () => void) => {
+                if (dragProxies.length === 0) {
+                    onFinished();
+                    return;
+                }
+
+                let remaining = dragProxies.length;
+
+                dragProxies.forEach((proxy, index) => {
+                    const start = dragStarts[index];
+                    if (!start) return;
+                    let finished = false;
+
+                    proxy.classList.add("is-returning");
+                    proxy.style.left = `${start.left}px`;
+                    proxy.style.top = `${start.top}px`;
+
+                    const finish = () => {
+                        if (finished) return;
+                        finished = true;
+                        remaining -= 1;
+                        if (remaining === 0) {
+                            removeDragProxies();
+                            onFinished();
+                        }
+                    };
+
+                    proxy.addEventListener("transitionend", finish, { once: true });
+                    window.setTimeout(finish, 220);
+                });
+            };
+
+            if (!shouldDragSelection) {
+                selectFile(
+                    file,
+                    pointerEvent.metaKey ||
+                        pointerEvent.ctrlKey ||
+                        pointerEvent.shiftKey,
+                );
+            }
+
+            const moveFile = (moveEvent: PointerEvent) => {
+                const rawDeltaX = moveEvent.clientX - startX;
+                const rawDeltaY = moveEvent.clientY - startY;
+                const deltaX = Math.max(
+                    selectionBounds.minDeltaX,
+                    Math.min(selectionBounds.maxDeltaX, rawDeltaX),
+                );
+                const deltaY = Math.max(
+                    selectionBounds.minDeltaY,
+                    Math.min(selectionBounds.maxDeltaY, rawDeltaY),
+                );
+
+                if (Math.abs(rawDeltaX) + Math.abs(rawDeltaY) > 4) {
+                    didDrag = true;
+                    ensureDragProxies();
+                    draggedFiles.forEach((draggedFile) =>
+                        draggedFile.classList.add("is-dragging"),
+                    );
+                    showDropzone(draggedFiles);
+                    updateDropzoneTarget(moveEvent);
+                }
+
+                dragStarts.forEach((item, index) => {
+                    const proxy = dragProxies[index];
+                    if (!proxy) return;
+
+                    proxy.style.left = `${item.left + deltaX}px`;
+                    proxy.style.top = `${item.top + deltaY}px`;
+                });
+            };
+
+            const stopWithDrop = (upEvent: PointerEvent) => {
+                const droppedOnDropzone = didDrag && isOverDropzone(upEvent);
+                draggedFiles.forEach((draggedFile) =>
+                    draggedFile.classList.remove("is-dragging"),
+                );
+                file.removeEventListener("pointermove", moveFile);
+                file.removeEventListener("pointerup", stopWithDrop);
+                file.removeEventListener("pointercancel", cancelMove);
+
+                if (droppedOnDropzone) {
+                    animateDragProxiesHome(() => {
+                        simulateDropzoneCompression(draggedFiles);
+                    });
+                } else if (didDrag) {
+                    dragStarts.forEach((item, index) => {
+                        const proxy = dragProxies[index];
+                        if (!proxy) return;
+
+                        item.file.style.left = proxy.style.left;
+                        item.file.style.top = proxy.style.top;
+                    });
+                    removeDragProxies();
+                    window.setTimeout(hideDropzone, 150);
+                }
+
+                isDropzoneSuppressedForDrag = false;
+            };
+
+            const cancelMove = () => {
+                draggedFiles.forEach((draggedFile) =>
+                    draggedFile.classList.remove("is-dragging"),
+                );
+                file.removeEventListener("pointermove", moveFile);
+                file.removeEventListener("pointerup", stopWithDrop);
+                file.removeEventListener("pointercancel", cancelMove);
+                removeDragProxies();
+                if (didDrag) window.setTimeout(hideDropzone, 150);
+                isDropzoneSuppressedForDrag = false;
+            };
+
+            file.addEventListener("pointermove", moveFile);
+            file.addEventListener("pointerup", stopWithDrop);
+            file.addEventListener("pointercancel", cancelMove);
+        });
+    });
+</script>
+
+<style>
+    .desktop-demo {
+        position: relative;
+        width: min(80vw, 1440px);
+        height: min(80vw, 860px);
+        min-height: 560px;
+        overflow: hidden;
+        isolation: isolate;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: clamp(18px, 2vw, 30px);
+        background: #17211d;
+        cursor: default;
+        user-select: none;
+        box-shadow:
+            0 44px 120px rgba(0, 0, 0, 0.5),
+            0 1px 0 rgba(255, 255, 255, 0.16) inset;
+    }
+
+    .wallpaper {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        background-image: url("/wallpapers/tahoe.jpg");
+        background-position: center;
+        background-size: cover;
+    }
+
+    .wallpaper::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.5)),
+            radial-gradient(circle at center, transparent, rgba(0, 0, 0, 0.34));
+    }
+
+    .menu-bar {
+        position: absolute;
+        inset: 0 0 auto;
+        z-index: 2;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px 0 22px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 13px;
+        font-weight: 500;
+        backdrop-filter: blur(24px);
+        background: rgba(19, 25, 22, 0.44);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-left,
+    .menu-right {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+    }
+
+    .menu-left {
+        gap: 18px;
+    }
+
+    .menu-right {
+        gap: 18px;
+    }
+
+    .menu-bar strong {
+        font-weight: 600;
+    }
+
+    .menu-icon {
+        display: block;
+        height: 13px;
+        width: auto;
+    }
+
+    .battery-icon {
+        height: 14px;
+    }
+
+    .kompakt-menu-icon {
+        height: 22px;
+    }
+
+    .switch-icon {
+        height: 14px;
+    }
+
+    .apple-mark {
+        display: block;
+        width: auto;
+        height: 16px;
+    }
+
+    .desktop-files {
+        position: absolute;
+        inset: 0;
+    }
+
+    .desktop-file {
+        position: absolute;
+        width: 64px;
+        display: grid;
+        justify-items: center;
+        gap: 9px;
+        border-radius: 8px;
+        outline: none;
+        touch-action: none;
+    }
+
+    .desktop-file-1 {
+        left: clamp(320px, 27vw, 500px);
+        top: 228px;
+    }
+
+    .desktop-file-2 {
+        left: clamp(470px, 39vw, 700px);
+        top: 300px;
+    }
+
+    .desktop-file-3 {
+        left: clamp(355px, 30vw, 550px);
+        top: 430px;
+    }
+
+    .desktop-file-4 {
+        left: clamp(610px, 49vw, 860px);
+        top: 264px;
+    }
+
+    .desktop-file-5 {
+        left: clamp(565px, 45vw, 800px);
+        top: 470px;
+    }
+
+    .file-thumbnail {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        overflow: hidden;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.14);
+        box-shadow:
+            0 10px 18px rgba(0, 0, 0, 0.28),
+            0 0 0 1px rgba(255, 255, 255, 0.34),
+            0 0 0 3px rgba(0, 0, 0, 0.16);
+    }
+
+    .desktop-file.is-selected .file-thumbnail,
+    .desktop-file:focus-visible .file-thumbnail {
+        box-shadow:
+            0 10px 18px rgba(0, 0, 0, 0.28),
+            0 0 0 2px rgba(111, 190, 255, 0.92),
+            0 0 0 5px rgba(0, 102, 255, 0.38);
+    }
+
+    .file-thumbnail img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+
+    .video-badge {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding-left: 2px;
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 12px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+        background: rgba(0, 0, 0, 0.08);
+    }
+
+    .file-name {
+        max-width: 76px;
+        color: white;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1;
+        letter-spacing: 0;
+        text-align: center;
+        text-shadow:
+            0 2px 7px rgba(0, 0, 0, 0.72),
+            0 0 1px rgba(0, 0, 0, 0.82);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .desktop-file.is-selected .file-name,
+    .desktop-file:focus-visible .file-name {
+        padding: 2px 4px;
+        border-radius: 4px;
+        background: rgba(0, 102, 255, 0.76);
+    }
+
+    .desktop-file.is-dragging {
+        opacity: 0.42;
+    }
+
+    :global(.drag-proxy) {
+        z-index: 40;
+        opacity: 0.92;
+        pointer-events: none;
+        filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.32));
+    }
+
+    :global(.drag-proxy.is-returning) {
+        opacity: 0;
+        transition:
+            left 180ms cubic-bezier(0.2, 0.8, 0.22, 1),
+            top 180ms cubic-bezier(0.2, 0.8, 0.22, 1),
+            opacity 160ms ease;
+    }
+
+  :global(.selection-marquee) {
+    position: absolute;
+    z-index: 3;
+    width: 0;
+    height: 0;
+        border: 1px solid rgba(95, 170, 255, 0.72);
+    border-radius: 3px;
+    background: rgba(0, 102, 255, 0.18);
+    pointer-events: none;
+    opacity: 1;
+    transition:
+      opacity 140ms ease,
+      background-color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  :global(.selection-marquee.is-closing) {
+    border-color: rgba(95, 170, 255, 0);
+    background: rgba(0, 102, 255, 0);
+    opacity: 0;
+  }
+
+    :global(.preview-window) {
+        position: absolute;
+        z-index: 10;
+        width: 420px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 24px;
+        corner-shape: squircle;
+        background: rgba(24, 24, 28, 0.74);
+        backdrop-filter: blur(24px);
+        box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48);
+        transform-origin: var(--preview-origin-x, 50%)
+            var(--preview-origin-y, 50%);
+    }
+
+    :global(.preview-window.is-opening) {
+        animation: preview-open 260ms cubic-bezier(0.2, 0.9, 0.22, 1) both;
+    }
+
+    :global(.preview-chrome) {
+        height: 34px;
+        display: grid;
+        grid-template-columns: 60px 1fr 60px;
+        align-items: center;
+        padding: 0 12px;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 12px;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        touch-action: none;
+    }
+
+    :global(.preview-controls) {
+        display: flex;
+        gap: 7px;
+    }
+
+  :global(.preview-controls button) {
+    width: 11px;
+    height: 11px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: #ff5f57;
+  }
+
+  :global(.preview-controls button:nth-child(2)),
+  :global(.preview-controls button:nth-child(3)) {
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  :global(.preview-controls button:disabled) {
+    cursor: default;
+  }
+
+  :global(.preview-close) {
+    cursor: default;
+  }
+
+    :global(.preview-title) {
+        min-width: 0;
+        overflow: hidden;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    :global(.preview-media) {
+        display: grid;
+        place-items: center;
+        height: 320px;
+        background: rgba(0, 0, 0, 0.42);
+    }
+
+    :global(.preview-media img),
+    :global(.preview-media video) {
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+        object-fit: contain;
+    }
+
+    @keyframes preview-open {
+        from {
+            opacity: 0;
+            transform: scale(0.08);
+            filter: blur(2px);
+        }
+        72% {
+            opacity: 1;
+            transform: scale(1.015);
+            filter: blur(0);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+            filter: blur(0);
+        }
+    }
+
+    .dropzone-demo {
+        position: absolute;
+        inset: 0 0 0 auto;
+        z-index: 30;
+        width: max(20%, 200px);
+        overflow: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transform: scaleX(0.001);
+        transform-origin: right center;
+        transition:
+            transform 280ms cubic-bezier(0.39, 0.57, 0.22, 0.95),
+            opacity 280ms cubic-bezier(0.39, 0.57, 0.22, 0.95);
+    }
+
+    .dropzone-demo.is-visible {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+
+    .dropzone-demo::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background:
+            linear-gradient(
+                90deg,
+                rgba(0, 0, 0, 0) 0,
+                rgba(0, 0, 0, 0.22) 32%,
+                rgba(0, 0, 0, 0.58) 72%,
+                rgba(0, 0, 0, 0.82) 100%
+            );
+    }
+
+    .dropzone-blur {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background: rgba(4, 8, 18, 0.58);
+        backdrop-filter: blur(72px) saturate(1.28);
+        -webkit-backdrop-filter: blur(72px) saturate(1.28);
+        mask-image: linear-gradient(
+            90deg,
+            transparent 0,
+            rgba(0, 0, 0, 0.24) 16%,
+            rgba(0, 0, 0, 0.82) 54%,
+            black 100%
+        );
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            transparent 0,
+            rgba(0, 0, 0, 0.24) 16%,
+            rgba(0, 0, 0, 0.82) 54%,
+            black 100%
+        );
+    }
+
+    .dropzone-demo::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        background:
+            linear-gradient(
+                90deg,
+                transparent 0,
+                transparent 34%,
+                rgba(255, 255, 255, 0.03) 58%,
+                rgba(255, 255, 255, 0.08) 78%,
+                rgba(255, 255, 255, 0.14) 100%
+            ),
+            radial-gradient(
+                circle at 78% 42%,
+                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.04) 28%,
+                transparent 58%
+            ),
+            radial-gradient(
+                circle at 94% 72%,
+                rgba(255, 255, 255, 0.08),
+                rgba(255, 255, 255, 0.035) 24%,
+                transparent 52%
+            );
+        opacity: 0;
+        filter: blur(18px);
+        mix-blend-mode: screen;
+        transition:
+            opacity 180ms ease,
+            filter 180ms ease;
+        mask-image: linear-gradient(
+            90deg,
+            transparent 0,
+            transparent 34%,
+            rgba(0, 0, 0, 0.34) 62%,
+            black 100%
+        );
+    }
+
+    .dropzone-demo.is-targeted::after {
+        opacity: 1;
+        filter: blur(12px);
+        animation: dropzone-breathe 1.7s ease-in-out infinite alternate;
+    }
+
+    .dropzone-bloom {
+        position: absolute;
+        z-index: 3;
+        right: -20%;
+        top: 50%;
+        width: 92%;
+        aspect-ratio: 1;
+        border-radius: 999px;
+        border: 10px solid rgba(255, 255, 255, 0.14);
+        opacity: 0;
+        filter: blur(7px);
+        transform: translateY(-50%) scale(0.18);
+        transition: opacity 180ms ease;
+    }
+
+    .dropzone-demo.is-targeted .dropzone-bloom {
+        opacity: 0.72;
+        animation: dropzone-ripple 700ms cubic-bezier(0.2, 0.8, 0.22, 1) both;
+    }
+
+    .dropzone-center {
+        position: relative;
+        z-index: 4;
+        height: 100%;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        padding-inline: 18px;
+        color: white;
+        text-align: center;
+    }
+
+    .dropzone-preview-stack {
+        position: relative;
+        width: 128px;
+        height: 102px;
+        margin-bottom: 16px;
+        filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.34));
+    }
+
+    .dropzone-preview-stack[hidden] {
+        display: none;
+    }
+
+    :global(.dropzone-preview-card) {
+        position: absolute;
+        left: 25px;
+        top: 12px;
+        width: 78px;
+        height: 78px;
+        overflow: hidden;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.22);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+
+    :global(.dropzone-preview-card img) {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        -webkit-user-drag: none;
+    }
+
+    :global(.dropzone-preview-card span) {
+        position: absolute;
+        right: 5px;
+        bottom: 5px;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        padding-left: 2px;
+        border-radius: 999px;
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(0, 0, 0, 0.48);
+    }
+
+    :global(.preview-card-1) {
+        transform: translate(-22px, 10px) rotate(-8deg);
+        z-index: 1;
+    }
+
+    .dropzone-preview-stack.is-single-preview :global(.preview-card-1) {
+        transform: none;
+    }
+
+    :global(.preview-card-2) {
+        transform: rotate(4deg);
+        z-index: 2;
+    }
+
+    :global(.preview-card-3) {
+        transform: translate(22px, 12px) rotate(13deg);
+        z-index: 3;
+    }
+
+    :global(.dropzone-preview-count) {
+        position: absolute;
+        right: 8px;
+        bottom: 4px;
+        z-index: 4;
+        min-width: 26px;
+        height: 20px;
+        padding: 0 7px;
+        border-radius: 999px;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 20px;
+        background: rgba(0, 0, 0, 0.46);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+
+    .dropzone-title {
+        --magnet-x: 0px;
+        --magnet-y: 0px;
+        height: 24px;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 24px;
+        letter-spacing: 0;
+        transition:
+            transform 180ms cubic-bezier(0.2, 0.8, 0.22, 1),
+            opacity 180ms ease;
+        transform: translate(var(--magnet-x), var(--magnet-y));
+    }
+
+    .dropzone-demo.is-targeted .dropzone-title {
+        color: white;
+        transform: translate(var(--magnet-x), var(--magnet-y)) scale(1.16);
+    }
+
+    .dropzone-demo[data-phase="processing"] .dropzone-title {
+        color: rgba(255, 255, 255, 0.46);
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.42),
+            white,
+            rgba(255, 255, 255, 0.42)
+        );
+        background-size: 160% 100%;
+        background-clip: text;
+        animation: thinking-text 1.65s linear infinite;
+    }
+
+    .dropzone-demo[data-phase="finished"] .dropzone-title {
+        height: 0;
+        opacity: 0;
+        transform: scale(1.04);
+    }
+
+    .dropzone-completion {
+        display: grid;
+        gap: 5px;
+        margin-top: 0;
+    }
+
+    .dropzone-completion[hidden] {
+        display: none;
+    }
+
+    .dropzone-completion strong {
+        color: white;
+        font-size: 25px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0;
+    }
+
+    .dropzone-completion span {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .escape-hint {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+    }
+
+    .escape-hint kbd {
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 5px;
+        color: rgba(255, 255, 255, 0.78);
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 20px;
+        letter-spacing: 0.2px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+
+    .escape-hint span {
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    @keyframes dropzone-breathe {
+        from {
+            transform: scale(0.99);
+        }
+        to {
+            transform: scale(1.02);
+        }
+    }
+
+    @keyframes dropzone-ripple {
+        from {
+            opacity: 0.72;
+            transform: translateY(-50%) scale(0.18);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-50%) scale(1.33);
+        }
+    }
+
+    @keyframes thinking-text {
+        from {
+            background-position: 100% 0;
+        }
+        to {
+            background-position: -60% 0;
+        }
+    }
+
+    .dock {
+        position: absolute;
+        left: 50%;
+        bottom: 18px;
+        z-index: 2;
+        display: flex;
+        gap: 6px;
+        align-items: end;
+        padding: 10px 13px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 48px;
+        corner-shape: squircle;
+        background: rgba(0, 0, 0, 0.08);
+        backdrop-filter: blur(24px);
+        transform: translateX(-50%);
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
+    }
+
+    .dock-icon {
+        width: 72px;
+        height: 72px;
+        display: grid;
+        place-items: center;
+        color: white;
+        font-size: clamp(16px, 1.5vw, 22px);
+        font-weight: 900;
+        border-radius: 13px;
+        background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.34), transparent 46%),
+            linear-gradient(145deg, #506dff, #141c45);
+    }
+
+    .dock-icon:has(img) {
+        overflow: visible;
+        background: transparent;
+        border-radius: 0;
+    }
+
+    .dock-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.24));
+    }
+
+    @media (max-width: 900px) {
+        .desktop-demo {
+            width: 100%;
+            height: 720px;
+            min-height: 0;
+            border-radius: 22px;
+        }
+
+        .menu-icon {
+            display: none;
+        }
+
+        .desktop-files {
+            inset: 0;
+        }
+
+        .desktop-file {
+            width: 58px;
+            gap: 8px;
+        }
+
+        .desktop-file-1 {
+            left: 72px;
+            top: 184px;
+        }
+
+        .desktop-file-2 {
+            left: 160px;
+            top: 220px;
+        }
+
+        .desktop-file-3 {
+            left: 82px;
+            top: 352px;
+        }
+
+        .desktop-file-4 {
+            left: 238px;
+            top: 202px;
+        }
+
+        .desktop-file-5 {
+            left: 196px;
+            top: 392px;
+        }
+
+        .file-thumbnail {
+            width: 42px;
+            height: 42px;
+            border-radius: 6px;
+        }
+
+        .file-name {
+            max-width: 72px;
+            font-size: 11px;
+        }
+
+        :global(.preview-window) {
+            width: min(340px, 82%);
+        }
+
+        :global(.preview-media) {
+            height: 320px;
+        }
+
+        .dropzone-demo {
+            width: max(38%, 200px);
+        }
+
+        .dropzone-center {
+            padding-inline: 16px;
+        }
+
+        .dropzone-preview-stack {
+            transform: scale(0.86);
+            margin-bottom: 4px;
+        }
+
+        .dock {
+            bottom: 12px;
+            gap: 8px;
+            padding: 8px 10px;
+        }
+
+        .dock-icon {
+            width: 56px;
+            height: 56px;
+        }
+    }
+</style>
