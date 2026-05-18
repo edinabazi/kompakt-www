@@ -12,30 +12,40 @@ const desktopFiles = [
         thumbnail: "/desktop-examples/alpine-lake.jpg",
         preview: "/desktop-examples/lake-original.jpg",
         kind: "image",
+        originalSize: 4.8,
+        compressedSize: 2.9,
     },
     {
         name: "portrait.jpg",
         thumbnail: "/desktop-examples/city-portrait.jpg",
         preview: "/desktop-examples/portrait-original.jpg",
         kind: "image",
+        originalSize: 7.2,
+        compressedSize: 4.5,
     },
     {
         name: "studio.jpg",
         thumbnail: "/desktop-examples/studio-shot.jpg",
         preview: "/desktop-examples/studio-original.jpg",
         kind: "image",
+        originalSize: 5.6,
+        compressedSize: 3.6,
     },
     {
         name: "product.mp4",
         thumbnail: "/desktop-examples/product-reel.jpg",
         preview: "/desktop-examples/product-reel.mp4",
         kind: "video",
+        originalSize: 42.4,
+        compressedSize: 28.7,
     },
     {
         name: "launch.mp4",
         thumbnail: "/desktop-examples/launch-clip.jpg",
         preview: "/desktop-examples/launch-clip.mp4",
         kind: "video",
+        originalSize: 24.8,
+        compressedSize: 16.9,
     },
 ];
 ---
@@ -92,6 +102,8 @@ const desktopFiles = [
                     data-file-name={file.name}
                     data-file-kind={file.kind}
                     data-file-preview={file.preview}
+                    data-original-size={file.originalSize}
+                    data-compressed-size={file.compressedSize}
                     tabindex="0"
                     role="button"
                     aria-label={`${file.name} file`}
@@ -119,10 +131,12 @@ const desktopFiles = [
         <div class="dropzone-bloom" aria-hidden="true"></div>
         <div class="dropzone-center">
             <div class="dropzone-preview-stack" data-dropzone-previews></div>
-            <div class="dropzone-title" data-dropzone-title>Kompakt files</div>
-            <div class="dropzone-completion" data-dropzone-completion hidden>
-                <strong>42% smaller</strong>
-                <span>38.4 MB -> 22.3 MB</span>
+            <div class="dropzone-title" data-dropzone-title>
+                <span>Kompakt files</span>
+            </div>
+            <div class="dropzone-completion" data-dropzone-completion aria-hidden="true">
+                <strong data-completion-percent>0% smaller</strong>
+                <span data-completion-size>0 MB -> 0 MB</span>
             </div>
             <div class="escape-hint">
                 <kbd>ESC</kbd>
@@ -173,10 +187,18 @@ const desktopFiles = [
     const dropzoneCompletion = document.querySelector<HTMLElement>(
         "[data-dropzone-completion]",
     );
+    const completionPercent = document.querySelector<HTMLElement>(
+        "[data-completion-percent]",
+    );
+    const completionSize = document.querySelector<HTMLElement>(
+        "[data-completion-size]",
+    );
     let activePreview: HTMLElement | null = null;
     let activeDropFiles: HTMLElement[] = [];
     let dropzoneDismissTimer: number | undefined;
     let isDropzoneSuppressedForDrag = false;
+    let currentDropzonePhase = "idle";
+    let currentDropzoneTitle = "Kompakt files";
     let previewZIndex = 10;
 
     const formatMenuClock = (date: Date) => {
@@ -289,6 +311,7 @@ const desktopFiles = [
     const renderDropzonePreviews = (files: HTMLElement[]) => {
         if (!dropzonePreviews) return;
 
+        dropzonePreviews.classList.remove("is-visible");
         dropzonePreviews.replaceChildren();
         dropzonePreviews.classList.toggle("is-single-preview", files.length === 1);
 
@@ -322,6 +345,77 @@ const desktopFiles = [
         }
     };
 
+    const formatMegabytes = (value: number) => {
+        if (value >= 100) return `${Math.round(value)} MB`;
+        return `${value.toFixed(1)} MB`;
+    };
+
+    const updateCompletionSummary = (files: HTMLElement[]) => {
+        const originalSize = files.reduce(
+            (total, file) => total + Number(file.dataset.originalSize ?? 0),
+            0,
+        );
+        const compressedSize = files.reduce(
+            (total, file) => total + Number(file.dataset.compressedSize ?? 0),
+            0,
+        );
+        const percentSmaller =
+            originalSize > 0
+                ? Math.round(((originalSize - compressedSize) / originalSize) * 100)
+                : 0;
+
+        if (completionPercent) {
+            completionPercent.textContent = `${percentSmaller}% smaller`;
+        }
+
+        if (completionSize) {
+            completionSize.textContent = `${formatMegabytes(originalSize)} -> ${formatMegabytes(compressedSize)}`;
+        }
+    };
+
+    const createDropzoneTitleNode = (text: string, isThinking = false) => {
+        const node = document.createElement("span");
+
+        if (!isThinking) {
+            node.textContent = text;
+            return node;
+        }
+
+        node.className = "thinking-title";
+
+        const base = document.createElement("span");
+        base.className = "thinking-title-base";
+        base.textContent = text;
+
+        const shine = document.createElement("span");
+        shine.className = "thinking-title-shine";
+        shine.textContent = text;
+
+        node.append(base, shine);
+        return node;
+    };
+
+    const setDropzoneTitle = (text: string, isThinking = false) => {
+        if (!dropzoneTitle || text === currentDropzoneTitle) return;
+
+        currentDropzoneTitle = text;
+
+        const previous = dropzoneTitle.lastElementChild as HTMLElement | null;
+        previous?.classList.add("is-exiting");
+
+        const next = createDropzoneTitleNode(text, isThinking);
+        next.className = "is-entering";
+        if (isThinking) next.classList.add("thinking-title");
+        dropzoneTitle.append(next);
+
+        requestAnimationFrame(() => {
+            next.classList.remove("is-entering");
+        });
+
+        previous?.addEventListener("animationend", () => previous.remove(), { once: true });
+        window.setTimeout(() => previous?.remove(), 380);
+    };
+
     const setDropzonePhase = (
         phase: "idle" | "targeted" | "processing" | "finished",
         files = activeDropFiles,
@@ -329,19 +423,32 @@ const desktopFiles = [
         if (!dropzone || !dropzoneTitle || !dropzoneCompletion) return;
 
         const summary = summarizeFiles(files);
+        const oldPhase = currentDropzonePhase;
+        currentDropzonePhase = phase;
         dropzone.dataset.phase = phase;
-        dropzoneCompletion.hidden = phase !== "finished";
-        dropzonePreviews?.toggleAttribute(
-            "hidden",
-            phase === "idle" || phase === "targeted",
-        );
+        dropzoneCompletion.setAttribute("aria-hidden", phase === "finished" ? "false" : "true");
+
+        const shouldShowPreview = phase === "processing" || phase === "finished";
+        dropzonePreviews?.toggleAttribute("hidden", !shouldShowPreview);
+        requestAnimationFrame(() => {
+            dropzonePreviews?.classList.toggle("is-visible", shouldShowPreview);
+        });
 
         if (phase === "processing") {
-            dropzoneTitle.textContent = `Kompakting ${summary.noun}`;
+            setDropzoneTitle(`Kompakting ${summary.noun}`, true);
         } else if (phase === "finished") {
-            dropzoneTitle.textContent = "";
+            setDropzoneTitle("");
         } else {
-            dropzoneTitle.textContent = `Kompakt ${summary.noun}`;
+            setDropzoneTitle(`Kompakt ${summary.noun}`);
+        }
+
+        if (oldPhase !== phase && phase === "finished") {
+            dropzoneCompletion.classList.remove("is-visible");
+            window.setTimeout(() => {
+                dropzoneCompletion.classList.add("is-visible");
+            }, 80);
+        } else if (phase !== "finished") {
+            dropzoneCompletion.classList.remove("is-visible");
         }
     };
 
@@ -364,6 +471,17 @@ const desktopFiles = [
         dropzone.classList.remove("is-visible", "is-targeted");
         dropzone.setAttribute("aria-hidden", "true");
         dropzone.dataset.phase = "idle";
+        currentDropzonePhase = "idle";
+        currentDropzoneTitle = "Kompakt files";
+        if (dropzoneTitle) {
+            dropzoneTitle.replaceChildren();
+            const title = document.createElement("span");
+            title.textContent = currentDropzoneTitle;
+            dropzoneTitle.append(title);
+        }
+        dropzonePreviews?.classList.remove("is-visible");
+        dropzoneCompletion?.classList.remove("is-visible");
+        dropzoneCompletion?.setAttribute("aria-hidden", "true");
         window.clearTimeout(dropzoneDismissTimer);
     };
 
@@ -405,7 +523,10 @@ const desktopFiles = [
         if (isDropzoneSuppressedForDrag) return;
 
         dropzone.classList.remove("is-targeted");
+        dropzoneTitle?.style.setProperty("--magnet-x", "0px");
+        dropzoneTitle?.style.setProperty("--magnet-y", "0px");
         renderDropzonePreviews(files);
+        updateCompletionSummary(files);
         setDropzonePhase("processing", files);
 
         window.clearTimeout(dropzoneDismissTimer);
@@ -414,8 +535,8 @@ const desktopFiles = [
 
             dropzoneDismissTimer = window.setTimeout(() => {
                 hideDropzone();
-            }, 1650);
-        }, 2200);
+            }, 2400);
+        }, 2900);
     };
 
     const getMediaSize = (source: HTMLImageElement | HTMLVideoElement) => {
@@ -547,36 +668,20 @@ const desktopFiles = [
         const mediaSize = await waitForMediaSize(mediaElement);
         if (activePreview !== previewWindow) return;
 
-        const bounds = getDesktopDragBounds(previewWindow);
         const chromeHeight = chrome.offsetHeight || 38;
-        const maxWidth = Math.min(
-            760,
-            Math.max(320, desktop.clientWidth * 0.68),
-            bounds.maxLeft - bounds.minLeft,
+        const maxMediaWidth = Math.min(620, desktop.clientWidth * 0.46);
+        const maxMediaHeight = Math.min(390, desktop.clientHeight * 0.42);
+        const scale = Math.min(
+            maxMediaWidth / mediaSize.width,
+            maxMediaHeight / mediaSize.height,
+            1,
         );
-        const maxMediaHeight = Math.min(
-            560,
-            Math.max(220, desktop.clientHeight * 0.62),
-            bounds.maxTop - bounds.minTop - chromeHeight,
-        );
-        const minWidth = 280;
-        const ratio = mediaSize.width / mediaSize.height;
-        let mediaWidth = Math.min(
-            maxWidth,
-            Math.max(minWidth, mediaSize.width),
-        );
-        let mediaHeight = mediaWidth / ratio;
+        const mediaWidth = Math.round(mediaSize.width * scale);
+        const mediaHeight = Math.round(mediaSize.height * scale);
 
-        if (mediaHeight > maxMediaHeight) {
-            mediaHeight = maxMediaHeight;
-            mediaWidth = mediaHeight * ratio;
-        }
-
-        mediaWidth = Math.max(minWidth, Math.min(maxWidth, mediaWidth));
-        mediaHeight = Math.min(maxMediaHeight, mediaHeight);
-
-        previewWindow.style.width = `${Math.round(mediaWidth)}px`;
-        mediaWrap.style.height = `${Math.round(mediaHeight)}px`;
+        previewWindow.style.width = `${mediaWidth}px`;
+        mediaWrap.style.width = `${mediaWidth}px`;
+        mediaWrap.style.height = `${mediaHeight}px`;
 
         const centered = clampToDesktop(
             previewWindow,
@@ -1222,7 +1327,7 @@ const desktopFiles = [
     :global(.preview-window) {
         position: absolute;
         z-index: 10;
-        width: 420px;
+        width: auto;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.22);
         border-radius: 24px;
@@ -1290,7 +1395,8 @@ const desktopFiles = [
     :global(.preview-media) {
         display: grid;
         place-items: center;
-        height: 320px;
+        width: auto;
+        height: auto;
         background: rgba(0, 0, 0, 0.42);
     }
 
@@ -1463,10 +1569,20 @@ const desktopFiles = [
         height: 102px;
         margin-bottom: 16px;
         filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.34));
+        opacity: 0;
+        transform: scale(0.92);
+        transition:
+            opacity 250ms ease-in-out,
+            transform 250ms ease-in-out;
     }
 
     .dropzone-preview-stack[hidden] {
         display: none;
+    }
+
+    .dropzone-preview-stack.is-visible {
+        opacity: 1;
+        transform: scale(1);
     }
 
     :global(.dropzone-preview-card) {
@@ -1544,6 +1660,10 @@ const desktopFiles = [
     .dropzone-title {
         --magnet-x: 0px;
         --magnet-y: 0px;
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-width: 180px;
         height: 24px;
         color: rgba(255, 255, 255, 0.88);
         font-size: 16px;
@@ -1551,9 +1671,28 @@ const desktopFiles = [
         line-height: 24px;
         letter-spacing: 0;
         transition:
-            transform 180ms cubic-bezier(0.2, 0.8, 0.22, 1),
-            opacity 180ms ease;
+            transform 240ms cubic-bezier(0.2, 0.8, 0.22, 1),
+            opacity 240ms ease,
+            height 240ms ease;
         transform: translate(var(--magnet-x), var(--magnet-y));
+    }
+
+    .dropzone-title :global(> span) {
+        grid-area: 1 / 1;
+        white-space: nowrap;
+        animation: dropzone-text-enter 250ms ease-in-out both;
+    }
+
+    .dropzone-title :global(> span:empty) {
+        display: none;
+    }
+
+    .dropzone-title :global(> span.is-entering) {
+        animation: dropzone-text-enter 250ms ease-in-out both;
+    }
+
+    .dropzone-title :global(> span.is-exiting) {
+        animation: dropzone-text-exit 250ms ease-in-out both;
     }
 
     .dropzone-demo.is-targeted .dropzone-title {
@@ -1562,20 +1701,52 @@ const desktopFiles = [
     }
 
     .dropzone-demo[data-phase="processing"] .dropzone-title {
+        color: white;
+    }
+
+    :global(.thinking-title) {
+        position: relative;
+        display: grid;
+        place-items: center;
+    }
+
+    :global(.thinking-title-base),
+    :global(.thinking-title-shine) {
+        grid-area: 1 / 1;
+        white-space: nowrap;
+    }
+
+    :global(.thinking-title-base) {
         color: rgba(255, 255, 255, 0.46);
-        background: linear-gradient(
+    }
+
+    :global(.thinking-title-shine) {
+        color: rgba(255, 255, 255, 0.96);
+        mask-image: linear-gradient(
             90deg,
-            rgba(255, 255, 255, 0.42),
-            white,
-            rgba(255, 255, 255, 0.42)
+            transparent 0,
+            rgba(0, 0, 0, 0.18) 32%,
+            black 50%,
+            rgba(0, 0, 0, 0.18) 68%,
+            transparent 100%
         );
-        background-size: 160% 100%;
-        background-clip: text;
-        animation: thinking-text 1.65s linear infinite;
+        mask-size: 52% 100%;
+        mask-repeat: no-repeat;
+        animation: thinking-mask 1.65s linear infinite;
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            transparent 0,
+            rgba(0, 0, 0, 0.18) 32%,
+            black 50%,
+            rgba(0, 0, 0, 0.18) 68%,
+            transparent 100%
+        );
+        -webkit-mask-size: 52% 100%;
+        -webkit-mask-repeat: no-repeat;
     }
 
     .dropzone-demo[data-phase="finished"] .dropzone-title {
-        height: 0;
+        height: 24px;
         opacity: 0;
         transform: scale(1.04);
     }
@@ -1583,11 +1754,24 @@ const desktopFiles = [
     .dropzone-completion {
         display: grid;
         gap: 5px;
-        margin-top: 0;
+        margin-top: -24px;
+        opacity: 0;
+        transform: scale(0.94);
+        filter: blur(1.4px);
+        transition:
+            opacity 320ms ease-in-out,
+            transform 320ms ease-in-out,
+            filter 320ms ease-in-out;
     }
 
-    .dropzone-completion[hidden] {
-        display: none;
+    .dropzone-completion[aria-hidden="true"] {
+        pointer-events: none;
+    }
+
+    .dropzone-completion.is-visible {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
     }
 
     .dropzone-completion strong {
@@ -1651,12 +1835,40 @@ const desktopFiles = [
         }
     }
 
-    @keyframes thinking-text {
+    @keyframes thinking-mask {
         from {
-            background-position: 100% 0;
+            mask-position: -58% 0;
+            -webkit-mask-position: -58% 0;
         }
         to {
-            background-position: -60% 0;
+            mask-position: 168% 0;
+            -webkit-mask-position: 168% 0;
+        }
+    }
+
+    @keyframes dropzone-text-enter {
+        from {
+            opacity: 0;
+            filter: blur(2px);
+            transform: scale(0.96);
+        }
+        to {
+            opacity: 1;
+            filter: blur(0);
+            transform: scale(1);
+        }
+    }
+
+    @keyframes dropzone-text-exit {
+        from {
+            opacity: 1;
+            filter: blur(0);
+            transform: scale(1);
+        }
+        to {
+            opacity: 0;
+            filter: blur(1.4px);
+            transform: scale(1.08);
         }
     }
 
@@ -1760,14 +1972,6 @@ const desktopFiles = [
         .file-name {
             max-width: 72px;
             font-size: 11px;
-        }
-
-        :global(.preview-window) {
-            width: min(340px, 82%);
-        }
-
-        :global(.preview-media) {
-            height: 320px;
         }
 
         .dropzone-demo {
