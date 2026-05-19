@@ -2,7 +2,7 @@
 import { site } from "../../site.config.mjs";
 
 const buttonBase =
-    "flex min-h-[64px] items-center justify-center gap-2.5 rounded-3xl px-7 py-4 text-[clamp(15px,1.45vw,20px)] leading-none font-bold tracking-[-0.03em] whitespace-nowrap no-underline [corner-shape:squircle] max-[900px]:flex-[1_1_190px]";
+    "flex min-h-[64px] items-center justify-center gap-2.5 rounded-3xl px-7 py-4 text-[clamp(15px,1.45vw,20px)] leading-none font-medium tracking-[-0.03em] whitespace-nowrap no-underline [corner-shape:squircle] max-[900px]:flex-[1_1_190px]";
 ---
 
 <header
@@ -42,6 +42,9 @@ const buttonBase =
         <a
             class={`${buttonBase} bg-linear-to-b from-[#3c72f2] to-[#0042cf] text-[#e9fffa]`}
             href={site.downloadUrl}
+            data-analytics-event="download_button_clicked"
+            data-analytics-target="macos"
+            data-analytics-placement="header"
         >
             <img
                 class="block h-[25px] w-[19px] shrink-0 -translate-y-[3px] object-contain"
@@ -54,6 +57,9 @@ const buttonBase =
         <a
             class={`${buttonBase} border-2 border-[#1041c7] bg-white/20 text-[#1041c7]`}
             href={site.githubUrl}
+            data-analytics-event="github_button_clicked"
+            data-analytics-target="github"
+            data-analytics-placement="header"
         >
             <img
                 class="block size-[22px] shrink-0 object-contain"

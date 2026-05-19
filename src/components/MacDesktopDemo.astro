@@ -134,7 +134,11 @@ const desktopFiles = [
             <div class="dropzone-title" data-dropzone-title>
                 <span>Kompakt files</span>
             </div>
-            <div class="dropzone-completion" data-dropzone-completion aria-hidden="true">
+            <div
+                class="dropzone-completion"
+                data-dropzone-completion
+                aria-hidden="true"
+            >
                 <strong data-completion-percent>0% smaller</strong>
                 <span data-completion-size>0 MB -> 0 MB</span>
             </div>
@@ -299,14 +303,22 @@ const desktopFiles = [
 
     const summarizeFiles = (files: HTMLElement[]) => {
         const count = files.length || 1;
-        const kinds = new Set(files.map((file) => file.dataset.fileKind ?? "file"));
+        const kinds = new Set(
+            files.map((file) => file.dataset.fileKind ?? "file"),
+        );
         const kind = kinds.size === 1 ? [...kinds][0] : "file";
         const noun =
             kind === "image"
-                ? count === 1 ? "image" : "images"
+                ? count === 1
+                    ? "image"
+                    : "images"
                 : kind === "video"
-                  ? count === 1 ? "video" : "videos"
-                  : count === 1 ? "file" : "files";
+                  ? count === 1
+                      ? "video"
+                      : "videos"
+                  : count === 1
+                    ? "file"
+                    : "files";
 
         return { count, noun };
     };
@@ -316,13 +328,18 @@ const desktopFiles = [
 
         dropzonePreviews.classList.remove("is-visible");
         dropzonePreviews.replaceChildren();
-        dropzonePreviews.classList.toggle("is-single-preview", files.length === 1);
+        dropzonePreviews.classList.toggle(
+            "is-single-preview",
+            files.length === 1,
+        );
 
         files.slice(0, 3).forEach((file, index) => {
             const card = document.createElement("div");
             card.className = `dropzone-preview-card preview-card-${index + 1}`;
 
-            const thumbnail = file.querySelector<HTMLImageElement>(".file-thumbnail img");
+            const thumbnail = file.querySelector<HTMLImageElement>(
+                ".file-thumbnail img",
+            );
             if (thumbnail) {
                 const image = document.createElement("img");
                 image.src = thumbnail.src;
@@ -364,7 +381,9 @@ const desktopFiles = [
         );
         const percentSmaller =
             originalSize > 0
-                ? Math.round(((originalSize - compressedSize) / originalSize) * 100)
+                ? Math.round(
+                      ((originalSize - compressedSize) / originalSize) * 100,
+                  )
                 : 0;
 
         if (completionPercent) {
@@ -422,7 +441,9 @@ const desktopFiles = [
             next.classList.remove("is-entering");
         });
 
-        previous?.addEventListener("animationend", () => previous.remove(), { once: true });
+        previous?.addEventListener("animationend", () => previous.remove(), {
+            once: true,
+        });
         window.setTimeout(() => previous?.remove(), 380);
     };
 
@@ -436,9 +457,13 @@ const desktopFiles = [
         const oldPhase = currentDropzonePhase;
         currentDropzonePhase = phase;
         dropzone.dataset.phase = phase;
-        dropzoneCompletion.setAttribute("aria-hidden", phase === "finished" ? "false" : "true");
+        dropzoneCompletion.setAttribute(
+            "aria-hidden",
+            phase === "finished" ? "false" : "true",
+        );
 
-        const shouldShowPreview = phase === "processing" || phase === "finished";
+        const shouldShowPreview =
+            phase === "processing" || phase === "finished";
         dropzonePreviews?.toggleAttribute("hidden", !shouldShowPreview);
         requestAnimationFrame(() => {
             dropzonePreviews?.classList.toggle("is-visible", shouldShowPreview);
@@ -515,8 +540,12 @@ const desktopFiles = [
         dropzone.classList.toggle("is-targeted", targeted);
         if (targeted && dropzoneTitle) {
             const rect = dropzone.getBoundingClientRect();
-            const normalizedX = ((event.clientX - rect.left) / Math.max(rect.width, 1) - 0.5) * 2;
-            const normalizedY = ((event.clientY - rect.top) / Math.max(rect.height, 1) - 0.5) * 2;
+            const normalizedX =
+                ((event.clientX - rect.left) / Math.max(rect.width, 1) - 0.5) *
+                2;
+            const normalizedY =
+                ((event.clientY - rect.top) / Math.max(rect.height, 1) - 0.5) *
+                2;
             const offsetX = normalizedX * 38 + Math.max(0, normalizedX) * 8;
             const offsetY = normalizedY * 32;
 
@@ -611,38 +640,40 @@ const desktopFiles = [
 
         closePreview();
 
-    const previewWindow = document.createElement("section");
-    previewWindow.className = "preview-window";
-    previewWindow.style.visibility = "hidden";
-    previewWindow.style.zIndex = String(previewZIndex++);
+        const previewWindow = document.createElement("section");
+        previewWindow.className = "preview-window";
+        previewWindow.style.visibility = "hidden";
+        previewWindow.style.zIndex = String(previewZIndex++);
         previewWindow.setAttribute("aria-label", `${name} preview`);
 
         const chrome = document.createElement("div");
         chrome.className = "preview-chrome";
 
-    const controls = document.createElement("div");
-    controls.className = "preview-controls";
-    const closeButton = document.createElement("button");
-    closeButton.className = "preview-close";
-    closeButton.type = "button";
-    closeButton.setAttribute("aria-label", "Close preview");
-    closeButton.addEventListener("pointerdown", (event) => event.stopPropagation());
-    closeButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      closePreview();
-    });
+        const controls = document.createElement("div");
+        controls.className = "preview-controls";
+        const closeButton = document.createElement("button");
+        closeButton.className = "preview-close";
+        closeButton.type = "button";
+        closeButton.setAttribute("aria-label", "Close preview");
+        closeButton.addEventListener("pointerdown", (event) =>
+            event.stopPropagation(),
+        );
+        closeButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            closePreview();
+        });
 
-    const minimizeButton = document.createElement("button");
-    minimizeButton.type = "button";
-    minimizeButton.disabled = true;
-    minimizeButton.setAttribute("aria-label", "Minimize disabled");
+        const minimizeButton = document.createElement("button");
+        minimizeButton.type = "button";
+        minimizeButton.disabled = true;
+        minimizeButton.setAttribute("aria-label", "Minimize disabled");
 
-    const zoomButton = document.createElement("button");
-    zoomButton.type = "button";
-    zoomButton.disabled = true;
-    zoomButton.setAttribute("aria-label", "Zoom disabled");
+        const zoomButton = document.createElement("button");
+        zoomButton.type = "button";
+        zoomButton.disabled = true;
+        zoomButton.setAttribute("aria-label", "Zoom disabled");
 
-    controls.append(closeButton, minimizeButton, zoomButton);
+        controls.append(closeButton, minimizeButton, zoomButton);
 
         const title = document.createElement("span");
         title.className = "preview-title";
@@ -700,9 +731,9 @@ const desktopFiles = [
             (desktop.clientHeight - previewWindow.offsetHeight) / 2,
         );
 
-    previewWindow.style.left = `${centered.left}px`;
-    previewWindow.style.top = `${centered.top}px`;
-    previewWindow.style.transform = "none";
+        previewWindow.style.left = `${centered.left}px`;
+        previewWindow.style.top = `${centered.top}px`;
+        previewWindow.style.transform = "none";
 
         const fileRect = file.getBoundingClientRect();
         const desktopRect = desktop.getBoundingClientRect();
@@ -714,10 +745,10 @@ const desktopFiles = [
         const originY =
             fileRect.top - desktopRect.top + fileRect.height / 2 - centered.top;
 
-    previewWindow.style.setProperty("--preview-origin-x", `${originX}px`);
-    previewWindow.style.setProperty("--preview-origin-y", `${originY}px`);
-    previewWindow.style.visibility = "visible";
-    previewWindow.classList.add("is-opening");
+        previewWindow.style.setProperty("--preview-origin-x", `${originX}px`);
+        previewWindow.style.setProperty("--preview-origin-y", `${originY}px`);
+        previewWindow.style.visibility = "visible";
+        previewWindow.classList.add("is-opening");
         previewWindow.addEventListener(
             "animationend",
             () => previewWindow.classList.remove("is-opening"),
@@ -728,17 +759,21 @@ const desktopFiles = [
             void mediaElement.play().catch(() => {});
         }
 
-    makePreviewDraggable(previewWindow, chrome);
-  };
+        makePreviewDraggable(previewWindow, chrome);
+    };
 
     const makePreviewDraggable = (
         previewWindow: HTMLElement,
         handle: HTMLElement,
     ) => {
-    handle.addEventListener("pointerdown", (event) => {
-      if (event.target instanceof HTMLElement && event.target.closest(".preview-controls")) return;
+        handle.addEventListener("pointerdown", (event) => {
+            if (
+                event.target instanceof HTMLElement &&
+                event.target.closest(".preview-controls")
+            )
+                return;
 
-      const pointerEvent = event as PointerEvent;
+            const pointerEvent = event as PointerEvent;
             handle.setPointerCapture(pointerEvent.pointerId);
 
             const startX = pointerEvent.clientX;
@@ -846,14 +881,16 @@ const desktopFiles = [
             });
         };
 
-    const stopMarquee = () => {
-      window.removeEventListener("pointermove", updateMarquee);
-      window.removeEventListener("pointerup", stopMarquee);
-      window.removeEventListener("pointercancel", stopMarquee);
-      marquee.classList.add("is-closing");
-      marquee.addEventListener("transitionend", () => marquee.remove(), { once: true });
-      window.setTimeout(() => marquee.remove(), 180);
-    };
+        const stopMarquee = () => {
+            window.removeEventListener("pointermove", updateMarquee);
+            window.removeEventListener("pointerup", stopMarquee);
+            window.removeEventListener("pointercancel", stopMarquee);
+            marquee.classList.add("is-closing");
+            marquee.addEventListener("transitionend", () => marquee.remove(), {
+                once: true,
+            });
+            window.setTimeout(() => marquee.remove(), 180);
+        };
 
         window.addEventListener("pointermove", updateMarquee);
         window.addEventListener("pointerup", stopMarquee);
@@ -900,6 +937,7 @@ const desktopFiles = [
             const pointerEvent = event as PointerEvent;
             if (!(desktop instanceof HTMLElement)) return;
 
+            pointerEvent.preventDefault();
             file.setPointerCapture(pointerEvent.pointerId);
 
             const startX = pointerEvent.clientX;
@@ -999,7 +1037,9 @@ const desktopFiles = [
                         }
                     };
 
-                    proxy.addEventListener("transitionend", finish, { once: true });
+                    proxy.addEventListener("transitionend", finish, {
+                        once: true,
+                    });
                     window.setTimeout(finish, 220);
                 });
             };
@@ -1013,7 +1053,24 @@ const desktopFiles = [
                 );
             }
 
+            const releasePointer = () => {
+                if (file.hasPointerCapture(pointerEvent.pointerId)) {
+                    file.releasePointerCapture(pointerEvent.pointerId);
+                }
+            };
+
+            const cleanupDragListeners = () => {
+                window.removeEventListener("pointermove", moveFile);
+                window.removeEventListener("pointerup", stopWithDrop);
+                window.removeEventListener("pointercancel", cancelMove);
+                file.removeEventListener("lostpointercapture", cancelMove);
+                releasePointer();
+            };
+
             const moveFile = (moveEvent: PointerEvent) => {
+                if (moveEvent.pointerId !== pointerEvent.pointerId) return;
+                moveEvent.preventDefault();
+
                 const rawDeltaX = moveEvent.clientX - startX;
                 const rawDeltaY = moveEvent.clientY - startY;
                 const deltaX = Math.max(
@@ -1045,13 +1102,13 @@ const desktopFiles = [
             };
 
             const stopWithDrop = (upEvent: PointerEvent) => {
+                if (upEvent.pointerId !== pointerEvent.pointerId) return;
+
                 const droppedOnDropzone = didDrag && isOverDropzone(upEvent);
                 draggedFiles.forEach((draggedFile) =>
                     draggedFile.classList.remove("is-dragging"),
                 );
-                file.removeEventListener("pointermove", moveFile);
-                file.removeEventListener("pointerup", stopWithDrop);
-                file.removeEventListener("pointercancel", cancelMove);
+                cleanupDragListeners();
 
                 if (droppedOnDropzone) {
                     animateDragProxiesHome(() => {
@@ -1072,21 +1129,27 @@ const desktopFiles = [
                 isDropzoneSuppressedForDrag = false;
             };
 
-            const cancelMove = () => {
+            const cancelMove = (cancelEvent?: PointerEvent) => {
+                if (
+                    cancelEvent instanceof PointerEvent &&
+                    cancelEvent.pointerId !== pointerEvent.pointerId
+                ) {
+                    return;
+                }
+
                 draggedFiles.forEach((draggedFile) =>
                     draggedFile.classList.remove("is-dragging"),
                 );
-                file.removeEventListener("pointermove", moveFile);
-                file.removeEventListener("pointerup", stopWithDrop);
-                file.removeEventListener("pointercancel", cancelMove);
+                cleanupDragListeners();
                 removeDragProxies();
                 if (didDrag) window.setTimeout(hideDropzone, 150);
                 isDropzoneSuppressedForDrag = false;
             };
 
-            file.addEventListener("pointermove", moveFile);
-            file.addEventListener("pointerup", stopWithDrop);
-            file.addEventListener("pointercancel", cancelMove);
+            window.addEventListener("pointermove", moveFile);
+            window.addEventListener("pointerup", stopWithDrop);
+            window.addEventListener("pointercancel", cancelMove);
+            file.addEventListener("lostpointercapture", cancelMove);
         });
     });
 </script>
@@ -1184,7 +1247,8 @@ const desktopFiles = [
     .apple-mark {
         display: block;
         width: auto;
-        height: 16px;
+        height: 18px;
+        transform: translateY(-2px);
     }
 
     .desktop-files {
@@ -1313,27 +1377,27 @@ const desktopFiles = [
             opacity 160ms ease;
     }
 
-  :global(.selection-marquee) {
-    position: absolute;
-    z-index: 3;
-    width: 0;
-    height: 0;
+    :global(.selection-marquee) {
+        position: absolute;
+        z-index: 3;
+        width: 0;
+        height: 0;
         border: 1px solid rgba(95, 170, 255, 0.72);
-    border-radius: 3px;
-    background: rgba(0, 102, 255, 0.18);
-    pointer-events: none;
-    opacity: 1;
-    transition:
-      opacity 140ms ease,
-      background-color 140ms ease,
-      border-color 140ms ease;
-  }
+        border-radius: 3px;
+        background: rgba(0, 102, 255, 0.18);
+        pointer-events: none;
+        opacity: 1;
+        transition:
+            opacity 140ms ease,
+            background-color 140ms ease,
+            border-color 140ms ease;
+    }
 
-  :global(.selection-marquee.is-closing) {
-    border-color: rgba(95, 170, 255, 0);
-    background: rgba(0, 102, 255, 0);
-    opacity: 0;
-  }
+    :global(.selection-marquee.is-closing) {
+        border-color: rgba(95, 170, 255, 0);
+        background: rgba(0, 102, 255, 0);
+        opacity: 0;
+    }
 
     :global(.preview-window) {
         position: absolute;
@@ -1373,27 +1437,27 @@ const desktopFiles = [
         gap: 7px;
     }
 
-  :global(.preview-controls button) {
-    width: 11px;
-    height: 11px;
-    padding: 0;
-    border: 0;
-    border-radius: 999px;
-    background: #ff5f57;
-  }
+    :global(.preview-controls button) {
+        width: 11px;
+        height: 11px;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: #ff5f57;
+    }
 
-  :global(.preview-controls button:nth-child(2)),
-  :global(.preview-controls button:nth-child(3)) {
-    background: rgba(255, 255, 255, 0.28);
-  }
+    :global(.preview-controls button:nth-child(2)),
+    :global(.preview-controls button:nth-child(3)) {
+        background: rgba(255, 255, 255, 0.28);
+    }
 
-  :global(.preview-controls button:disabled) {
-    cursor: default;
-  }
+    :global(.preview-controls button:disabled) {
+        cursor: default;
+    }
 
-  :global(.preview-close) {
-    cursor: default;
-  }
+    :global(.preview-close) {
+        cursor: default;
+    }
 
     :global(.preview-title) {
         min-width: 0;
@@ -1462,14 +1526,13 @@ const desktopFiles = [
         position: absolute;
         inset: 0;
         z-index: 1;
-        background:
-            linear-gradient(
-                90deg,
-                rgba(0, 0, 0, 0) 0,
-                rgba(0, 0, 0, 0.22) 32%,
-                rgba(0, 0, 0, 0.58) 72%,
-                rgba(0, 0, 0, 0.82) 100%
-            );
+        background: linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0) 0,
+            rgba(0, 0, 0, 0.22) 32%,
+            rgba(0, 0, 0, 0.58) 72%,
+            rgba(0, 0, 0, 0.82) 100%
+        );
     }
 
     .dropzone-blur {
