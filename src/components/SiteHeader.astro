@@ -1,0 +1,66 @@
+---
+import { site } from "../../site.config.mjs";
+
+const buttonBase =
+    "flex min-h-[64px] items-center justify-center gap-2.5 rounded-3xl px-7 py-4 text-[clamp(15px,1.45vw,20px)] leading-none font-bold tracking-[-0.03em] whitespace-nowrap no-underline [corner-shape:squircle] max-[900px]:flex-[1_1_190px]";
+---
+
+<header
+    class="flex w-[min(80vw,1440px)] items-center justify-between gap-6 max-[900px]:w-full max-[900px]:flex-col max-[900px]:items-start"
+    aria-label={site.name}
+>
+    <a
+        class="flex items-center gap-3.5 text-inherit no-underline"
+        href="/"
+        aria-label={`${site.name} home`}
+    >
+        <img
+            class="block size-[clamp(52px,5.6vw,84px)] shrink-0"
+            src={site.assets.appIcon}
+            alt=""
+            width="56"
+            height="56"
+        />
+        <div class="flex min-w-0 flex-col gap-1">
+            <h1
+                class="text-[clamp(28px,3.1vw,42px)] leading-[0.95] font-[650] tracking-[-0.03em] text-[#102459]"
+            >
+                {site.name}
+            </h1>
+            <span
+                class="text-[clamp(14px,1.45vw,20px)] leading-[1.1] font-medium tracking-[-0.03em] whitespace-nowrap text-black/60 max-[560px]:whitespace-normal"
+            >
+                {site.tagline}
+            </span>
+        </div>
+    </a>
+
+    <nav
+        class="flex shrink-0 items-stretch gap-3 max-[900px]:w-full max-[900px]:flex-wrap"
+        aria-label="Primary"
+    >
+        <a
+            class={`${buttonBase} bg-linear-to-b from-[#3c72f2] to-[#0042cf] text-[#e9fffa]`}
+            href={site.downloadUrl}
+        >
+            <img
+                class="block h-[25px] w-[19px] shrink-0 -translate-y-[3px] object-contain"
+                src={site.assets.appleIcon}
+                alt=""
+            />
+            <span>Download for Mac</span>
+        </a>
+
+        <a
+            class={`${buttonBase} border-2 border-[#1041c7] bg-white/20 text-[#1041c7]`}
+            href={site.githubUrl}
+        >
+            <img
+                class="block size-[22px] shrink-0 object-contain"
+                src={site.assets.githubIcon}
+                alt=""
+            />
+            <span>View on GitHub</span>
+        </a>
+    </nav>
+</header>

@@ -200,6 +200,9 @@ const desktopFiles = [
     let currentDropzonePhase = "idle";
     let currentDropzoneTitle = "Kompakt files";
     let previewZIndex = 10;
+    const successSound = new Audio("/sounds/success.mp3");
+    successSound.volume = 0.5;
+    successSound.preload = "auto";
 
     const formatMenuClock = (date: Date) => {
         const weekday = new Intl.DateTimeFormat(undefined, {
@@ -373,6 +376,13 @@ const desktopFiles = [
         }
     };
 
+    const playSuccessSound = () => {
+        successSound.currentTime = 0;
+        void successSound.play().catch(() => {
+            // Browsers can block sound until the first user gesture; this demo is gesture-driven.
+        });
+    };
+
     const createDropzoneTitleNode = (text: string, isThinking = false) => {
         const node = document.createElement("span");
 
@@ -443,6 +453,7 @@ const desktopFiles = [
         }
 
         if (oldPhase !== phase && phase === "finished") {
+            playSuccessSound();
             dropzoneCompletion.classList.remove("is-visible");
             window.setTimeout(() => {
                 dropzoneCompletion.classList.add("is-visible");

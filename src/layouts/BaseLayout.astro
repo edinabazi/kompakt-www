@@ -1,0 +1,80 @@
+---
+import { site } from "../../site.config.mjs";
+import "../styles/global.css";
+
+const canonicalUrl = new URL("/", site.url).toString();
+const ogImage = new URL(site.assets.ogImage, site.url).toString();
+const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "WebSite",
+            "@id": `${site.url}/#website`,
+            url: canonicalUrl,
+            name: site.name,
+            description: site.description,
+            inLanguage: "en",
+        },
+        {
+            "@type": "SoftwareApplication",
+            "@id": `${site.url}/#software`,
+            name: site.name,
+            applicationCategory: "MultimediaApplication",
+            operatingSystem: "macOS",
+            url: canonicalUrl,
+            downloadUrl: site.downloadUrl,
+            softwareVersion: "Latest",
+            image: ogImage,
+            description: site.description,
+            offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD",
+            },
+            sameAs: [site.githubUrl],
+        },
+    ],
+};
+---
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/png" sizes="224x224" href={site.assets.favicon} />
+        <link rel="icon" sizes="any" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href={site.assets.favicon} />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="description" content={site.description} />
+        <meta name="robots" content="index,follow" />
+        <meta name="theme-color" content={site.themeColor} />
+        <link rel="canonical" href={canonicalUrl} />
+        <link rel="manifest" href={site.assets.manifest} />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={site.name} />
+        <meta property="og:title" content={site.title} />
+        <meta property="og:description" content={site.description} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={site.title} />
+        <meta name="twitter:description" content={site.description} />
+        <meta name="twitter:image" content={ogImage} />
+
+        <script
+            type="application/ld+json"
+            set:html={JSON.stringify(structuredData)}
+        />
+        <title>{site.title}</title>
+    </head>
+    <body>
+        <main
+            class="flex min-h-screen flex-col items-center justify-center gap-[clamp(18px,3vw,34px)] px-[clamp(20px,4vw,56px)] py-[clamp(20px,4vw,56px)] max-[900px]:justify-start max-[900px]:px-3.5 max-[900px]:py-6"
+        >
+            <slot />
+        </main>
+    </body>
+</html>
