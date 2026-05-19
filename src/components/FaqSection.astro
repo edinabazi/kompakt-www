@@ -1,0 +1,146 @@
+---
+import { faqs } from "../content/landing";
+---
+
+<section
+    class="w-screen bg-[#090C1B] px-5 py-16 text-white/90 sm:py-[92px]"
+    aria-labelledby="faq-title"
+>
+    <div
+        class="mx-auto flex w-full max-w-[960px] flex-col items-center gap-12 sm:gap-[92px]"
+    >
+        <h2
+            id="faq-title"
+            class="text-center text-5xl leading-tight font-bold tracking-[-0.04em] sm:text-[64px]"
+        >
+            FAQs
+        </h2>
+        <div class="w-full">
+            {
+                faqs.map((faq) => (
+                    <details class="faq-item group border-b border-white/90">
+                        <summary class="flex w-full cursor-pointer list-none select-none items-center justify-between gap-6 py-6 text-left text-xl leading-tight font-semibold tracking-[-0.04em] marker:hidden sm:py-8 sm:text-2xl [&::-webkit-details-marker]:hidden">
+                            <span>{faq.question}</span>
+                            <span
+                                class="text-3xl leading-none font-normal transition-transform duration-300 ease-out group-open:rotate-45"
+                                aria-hidden="true"
+                            >
+                                +
+                            </span>
+                        </summary>
+                        <div class="faq-answer overflow-hidden">
+                            <p class="max-w-2xl pb-7 text-base leading-7 font-medium text-[rgba(255,255,234,0.72)] sm:pb-9">
+                                {faq.answer}
+                            </p>
+                        </div>
+                    </details>
+                ))
+            }
+        </div>
+    </div>
+</section>
+
+<script>
+    const faqItems = document.querySelectorAll<HTMLDetailsElement>(".faq-item");
+    const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    const setAnswerState = (item: HTMLDetailsElement, open: boolean) => {
+        const answer = item.querySelector<HTMLElement>(".faq-answer");
+        if (!answer) return;
+
+        answer.style.height = open ? `${answer.scrollHeight}px` : "0px";
+        answer.style.opacity = open ? "1" : "0";
+    };
+
+    const closeItem = (item: HTMLDetailsElement) => {
+        const answer = item.querySelector<HTMLElement>(".faq-answer");
+        if (!answer || !item.open) return;
+
+        if (prefersReducedMotion) {
+            item.open = false;
+            setAnswerState(item, false);
+            return;
+        }
+
+        answer.style.height = `${answer.scrollHeight}px`;
+        requestAnimationFrame(() => {
+            answer.style.height = "0px";
+            answer.style.opacity = "0";
+        });
+
+        answer.addEventListener(
+            "transitionend",
+            (event) => {
+                if (event.propertyName === "height") item.open = false;
+            },
+            { once: true },
+        );
+    };
+
+    const openItem = (item: HTMLDetailsElement) => {
+        const answer = item.querySelector<HTMLElement>(".faq-answer");
+        if (!answer || item.open) return;
+
+        item.open = true;
+
+        if (prefersReducedMotion) {
+            setAnswerState(item, true);
+            return;
+        }
+
+        answer.style.height = "0px";
+        answer.style.opacity = "0";
+        requestAnimationFrame(() => {
+            answer.style.height = `${answer.scrollHeight}px`;
+            answer.style.opacity = "1";
+        });
+
+        answer.addEventListener(
+            "transitionend",
+            (event) => {
+                if (event.propertyName === "height" && item.open) {
+                    answer.style.height = "auto";
+                }
+            },
+            { once: true },
+        );
+    };
+
+    faqItems.forEach((item) => {
+        const summary = item.querySelector("summary");
+        setAnswerState(item, item.open);
+
+        summary?.addEventListener("click", (event) => {
+            event.preventDefault();
+
+            const shouldOpen = !item.open;
+            faqItems.forEach((otherItem) => {
+                if (otherItem !== item) closeItem(otherItem);
+            });
+
+            if (shouldOpen) {
+                openItem(item);
+            } else {
+                closeItem(item);
+            }
+        });
+    });
+</script>
+
+<style>
+    .faq-answer {
+        height: 0;
+        opacity: 0;
+        transition:
+            height 720ms cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 340ms ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .faq-answer {
+            transition: none;
+        }
+    }
+</style>

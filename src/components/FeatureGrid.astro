@@ -1,0 +1,26 @@
+---
+import { Icon } from "astro-icon/components";
+import { features } from "../content/landing";
+---
+
+<section
+    class="grid w-full max-w-[1120px] grid-cols-2 gap-x-4 gap-y-10 px-2 py-24 max-[700px]:py-16"
+    aria-label="Features"
+>
+    {
+        features.map(({ title, icon }) => (
+            <article class="flex min-h-[168px] flex-col items-center justify-center gap-4 text-center">
+                <Icon
+                    name={icon}
+                    class="size-12 text-[#1041c7]"
+                    aria-hidden="true"
+                />
+                <h2 class="text-[clamp(28px,3vw,32px)] leading-[0.95] font-semibold tracking-[-0.04em] text-[#142247]">
+                    {title[0]}
+                    <br />
+                    {title[1]}
+                </h2>
+            </article>
+        ))
+    }
+</section>

@@ -1,50 +1,54 @@
 ---
 import { site } from "../../site.config.mjs";
+import MacDesktopDemo from "./MacDesktopDemo.astro";
 
 const buttonBase =
-    "group relative flex min-h-[64px] items-center justify-center overflow-hidden rounded-3xl px-7 py-4 text-[clamp(15px,1.45vw,20px)] leading-none font-medium tracking-[-0.03em] whitespace-nowrap no-underline [corner-shape:squircle] transition duration-300 ease-out hover:opacity-95 active:scale-[0.99] max-[900px]:flex-[1_1_190px]";
+    "group relative flex min-h-[64px] items-center justify-center overflow-hidden rounded-3xl px-7 py-4 text-[clamp(15px,1.45vw,20px)] leading-none font-medium tracking-[-0.03em] whitespace-nowrap no-underline [corner-shape:squircle] transition duration-300 ease-out hover:opacity-95 active:scale-[0.99]";
 ---
 
-<header
-    class="flex w-[min(80vw,1440px)] items-center justify-between gap-6 max-[900px]:w-full max-[900px]:flex-col max-[900px]:items-start"
-    aria-label={site.name}
->
-    <a
-        class="flex items-center gap-3.5 text-inherit no-underline"
-        href="/"
-        aria-label={`${site.name} home`}
-    >
-        <img
-            class="block size-[clamp(52px,5.6vw,84px)] shrink-0"
-            src={site.assets.appIcon}
-            alt=""
-            width="56"
-            height="56"
-        />
-        <div class="flex min-w-0 flex-col gap-1">
-            <h1
-                class="text-[clamp(28px,3.1vw,42px)] leading-[0.95] font-[650] tracking-[-0.03em] text-[#142247]"
-            >
-                {site.name}
-            </h1>
-            <span
-                class="text-[clamp(14px,1.45vw,20px)] leading-[1.1] font-medium tracking-[-0.03em] whitespace-nowrap text-black/60 max-[560px]:whitespace-normal"
-            >
-                {site.tagline}
-            </span>
-        </div>
-    </a>
+<section class="flex w-full max-w-[1728px] flex-col items-center px-5">
+    <div class="mb-10 flex items-center sm:mb-16">
+        <a href="/" aria-label={`${site.name} home`} class="block">
+            <img
+                src="/brand/logo-full.png"
+                alt={site.name}
+                width="230"
+                height="64"
+                class="h-16 w-auto"
+            />
+        </a>
+    </div>
 
-    <nav
-        class="flex shrink-0 items-stretch gap-3 max-[900px]:w-full max-[900px]:flex-wrap"
-        aria-label="Primary"
+    <div class="mx-auto max-w-5xl text-center">
+        <h1
+            class="text-[10.5vw] leading-[0.9] font-bold tracking-[-0.04em] text-[#142247] sm:text-6xl lg:text-[64px]"
+        >
+            Optimize your files
+            <br class="hidden sm:inline" />
+            <span class="inline sm:hidden">&nbsp;</span>
+            with a single drag.
+        </h1>
+        <p
+            class="mx-auto mt-6 max-w-[720px] text-base leading-[1.36] font-medium tracking-[-0.02em] text-[#4b4b3d] sm:text-lg"
+        >
+            Kompakt is a <span class="italic">compact</span> Mac app that makes it
+            dead-simple to compress your images and videos. <br
+                class="hidden md:inline"
+            />
+            It stays out of your way until you need it. The moment you drag an image,
+            it pops up to help you out.
+        </p>
+    </div>
+
+    <div
+        class="relative z-30 mt-8 flex flex-wrap justify-center gap-3 max-[529px]:w-full max-[529px]:flex-col sm:items-start"
     >
         <a
-            class={`${buttonBase} bg-linear-to-b from-[#3c72f2] to-[#0042cf] text-[#e9fffa]`}
+            class={`${buttonBase} bg-linear-to-b from-[#3c72f2] to-[#0042cf] text-[#e9fffa] max-[529px]:w-full`}
             href={site.downloadUrl}
             data-analytics-event="download_button_clicked"
             data-analytics-target="macos"
-            data-analytics-placement="header"
+            data-analytics-placement="hero"
         >
             <span
                 class="inline-flex translate-x-0 items-center gap-2.5 transition duration-300 ease-out group-hover:-translate-x-8"
@@ -76,11 +80,11 @@ const buttonBase =
         </a>
 
         <a
-            class={`${buttonBase} border-2 border-[#1041c7] bg-white/20 text-[#1041c7]`}
+            class={`${buttonBase} border-2 border-[#1041c7] bg-white/20 text-[#1041c7] max-[529px]:w-full`}
             href={site.githubUrl}
             data-analytics-event="github_button_clicked"
             data-analytics-target="github"
-            data-analytics-placement="header"
+            data-analytics-placement="hero"
         >
             <span
                 class="inline-flex translate-x-0 items-center gap-2.5 transition duration-300 ease-out group-hover:-translate-x-8"
@@ -110,5 +114,11 @@ const buttonBase =
                     stroke-linejoin="round"></path>
             </svg>
         </a>
-    </nav>
-</header>
+    </div>
+
+    <div
+        class="relative mt-4 w-[min(80vw,1440px)] max-[1500px]:w-[90vw] max-[900px]:w-full sm:mt-14"
+    >
+        <MacDesktopDemo />
+    </div>
+</section>
