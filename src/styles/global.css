@@ -25,3 +25,51 @@ body {
   overflow-x: hidden;
   background: #f4f1ea;
 }
+
+[data-motion] {
+  --motion-opacity: 1;
+  --motion-y: 28px;
+  --motion-blur: 10px;
+  --motion-duration: 950ms;
+  --motion-delay: 0ms;
+  opacity: 0;
+  filter: blur(var(--motion-blur));
+  transform: translateY(var(--motion-y));
+  transition:
+    opacity var(--motion-duration) cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay),
+    filter var(--motion-duration) cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay),
+    transform var(--motion-duration) cubic-bezier(0.16, 1, 0.3, 1) var(--motion-delay);
+  will-change: opacity, filter, transform;
+}
+
+[data-motion="soft"] {
+  --motion-y: 18px;
+  --motion-blur: 8px;
+}
+
+[data-motion="section"] {
+  --motion-y: 24px;
+  --motion-blur: 0px;
+  --motion-duration: 900ms;
+}
+
+[data-motion="hero-demo"] {
+  --motion-y: 42px;
+  --motion-blur: 12px;
+  --motion-duration: 1100ms;
+}
+
+[data-motion].is-visible {
+  opacity: var(--motion-opacity);
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion] {
+    opacity: var(--motion-opacity);
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+}

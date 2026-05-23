@@ -215,6 +215,15 @@ const analyticsConfig = {
                 }
             });
         </script>
+        <noscript>
+            <style>
+                [data-motion] {
+                    filter: none !important;
+                    opacity: 1 !important;
+                    transform: none !important;
+                }
+            </style>
+        </noscript>
     </head>
     <body>
         <main
@@ -222,5 +231,46 @@ const analyticsConfig = {
         >
             <slot />
         </main>
+        <script is:inline>
+            const motionElements = document.querySelectorAll("[data-motion]");
+            const reduceMotion = window.matchMedia(
+                "(prefers-reduced-motion: reduce)",
+            ).matches;
+
+            const loadMotionElements = document.querySelectorAll(
+                "[data-motion-load]",
+            );
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    loadMotionElements.forEach((element) =>
+                        element.classList.add("is-visible"),
+                    );
+                });
+            });
+
+            if (reduceMotion || !("IntersectionObserver" in window)) {
+                requestAnimationFrame(() => {
+                    motionElements.forEach((element) =>
+                        element.classList.add("is-visible"),
+                    );
+                });
+            } else {
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach((entry) => {
+                            if (!entry.isIntersecting) return;
+                            entry.target.classList.add("is-visible");
+                            observer.unobserve(entry.target);
+                        });
+                    },
+                    { threshold: 0.22 },
+                );
+
+                motionElements.forEach((element) => {
+                    if (element.hasAttribute("data-motion-load")) return;
+                    observer.observe(element);
+                });
+            }
+        </script>
     </body>
 </html>

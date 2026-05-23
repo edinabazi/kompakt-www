@@ -8,6 +8,7 @@ import { faqs } from "../content/landing";
 >
     <div
         class="mx-auto flex w-full max-w-[960px] flex-col items-center gap-12 sm:gap-[92px]"
+        data-motion="section"
     >
         <h2
             id="faq-title"
@@ -17,8 +18,12 @@ import { faqs } from "../content/landing";
         </h2>
         <div class="w-full">
             {
-                faqs.map((faq) => (
-                    <details class="faq-item group border-b border-white/90">
+                faqs.map((faq, index) => (
+                    <details
+                        class="faq-item group border-b border-white/90"
+                        data-motion="soft"
+                        style={`--motion-y: 18px; --motion-blur: 7px; --motion-delay: ${index * 80}ms;`}
+                    >
                         <summary class="flex w-full cursor-pointer list-none select-none items-center justify-between gap-6 py-6 text-left text-xl leading-tight font-semibold tracking-[-0.04em] marker:hidden sm:py-8 sm:text-2xl [&::-webkit-details-marker]:hidden">
                             <span>{faq.question}</span>
                             <span

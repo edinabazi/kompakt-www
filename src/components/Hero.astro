@@ -7,7 +7,12 @@ const buttonBase =
 ---
 
 <section class="flex w-full max-w-[1728px] flex-col items-center px-5">
-    <div class="mb-10 flex items-center sm:mb-16">
+    <div
+        class="mb-10 flex items-center sm:mb-16"
+        data-motion="soft"
+        data-motion-load
+        style="--motion-delay: 40ms;"
+    >
         <a href="/" aria-label={`${site.name} home`} class="block">
             <img
                 src="/brand/logo-full.png"
@@ -19,7 +24,12 @@ const buttonBase =
         </a>
     </div>
 
-    <div class="mx-auto max-w-5xl text-center">
+    <div
+        class="mx-auto max-w-5xl text-center"
+        data-motion="soft"
+        data-motion-load
+        style="--motion-delay: 180ms;"
+    >
         <h1
             class="text-[10.5vw] leading-[0.9] font-bold tracking-[-0.04em] text-[#142247] sm:text-6xl lg:text-[64px]"
         >
@@ -42,6 +52,9 @@ const buttonBase =
 
     <div
         class="relative z-30 mt-8 flex flex-wrap justify-center gap-3 max-[529px]:w-full max-[529px]:flex-col sm:items-start"
+        data-motion="soft"
+        data-motion-load
+        style="--motion-delay: 320ms;"
     >
         <a
             class={`${buttonBase} bg-linear-to-b from-[#3c72f2] to-[#0042cf] text-[#e9fffa] max-[529px]:w-full`}
@@ -118,7 +131,165 @@ const buttonBase =
 
     <div
         class="relative mt-4 w-[min(80vw,1440px)] max-[1500px]:w-[90vw] max-[900px]:w-full sm:mt-14"
+        data-motion="hero-demo"
+        data-motion-load
+        style="--motion-delay: 420ms;"
     >
+        <div class="demo-callout" aria-hidden="true">
+            <span>Interactive demo</span>
+            <svg viewBox="0 0 132 112" fill="none" focusable="false">
+                <mask
+                    id="demo-callout-arrow-mask"
+                    maskUnits="userSpaceOnUse"
+                    x="0"
+                    y="0"
+                    width="132"
+                    height="112"
+                >
+                    <rect
+                        class="demo-callout-mask"
+                        x="0"
+                        y="0"
+                        width="132"
+                        height="112"
+                        fill="white"></rect>
+                </mask>
+                <g mask="url(#demo-callout-arrow-mask)">
+                    <path
+                        d="M119 7C110 41 82 72 34 89"
+                        stroke="currentColor"
+                        stroke-width="5"
+                        stroke-linecap="round"></path>
+                    <path
+                        d="M38 66C31 76 24 86 15 101C30 98 44 96 58 98"
+                        stroke="currentColor"
+                        stroke-width="5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"></path>
+                </g>
+            </svg>
+        </div>
         <MacDesktopDemo />
     </div>
 </section>
+
+<style>
+    .demo-callout {
+        position: absolute;
+        top: -178px;
+        right: 0;
+        z-index: 4;
+        display: grid;
+        justify-items: end;
+        color: #1041c7;
+        pointer-events: none;
+        transform: translateX(10px) rotate(4deg);
+    }
+
+    .demo-callout span {
+        max-width: 172px;
+        opacity: 0;
+        transform: translateY(6px) rotate(3deg);
+        font-size: clamp(19px, 1.9vw, 24px);
+        line-height: 0.92;
+        font-weight: 600;
+        letter-spacing: -0.045em;
+        text-align: right;
+        margin-bottom: 8px;
+    }
+
+    .is-visible .demo-callout span {
+        animation: demo-callout-text-in 420ms cubic-bezier(0.16, 1, 0.3, 1)
+            2260ms both;
+    }
+
+    .demo-callout svg {
+        width: clamp(82px, 8vw, 132px);
+        height: auto;
+        margin-top: 0;
+        margin-right: 42px;
+        transform: rotate(-24deg) translateX(9px) translateY(24px);
+        overflow: visible;
+    }
+
+    .demo-callout-mask {
+        transform: scaleY(0);
+        transform-box: fill-box;
+        transform-origin: top;
+    }
+
+    .is-visible .demo-callout-mask {
+        animation: demo-callout-arrow-reveal 680ms cubic-bezier(0.16, 1, 0.3, 1)
+            1540ms both;
+    }
+
+    @keyframes demo-callout-arrow-reveal {
+        to {
+            transform: scaleY(1);
+        }
+    }
+
+    @keyframes demo-callout-text-in {
+        to {
+            opacity: 1;
+            transform: translateY(0) rotate(3deg);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .demo-callout span {
+            opacity: 1;
+            transform: rotate(3deg);
+        }
+
+        .demo-callout-mask {
+            transform: none;
+        }
+
+        .is-visible .demo-callout span,
+        .is-visible .demo-callout-mask {
+            animation: none;
+        }
+    }
+
+    @media (max-width: 1099px) {
+        .demo-callout {
+            display: none;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .demo-callout {
+            top: -124px;
+            right: 18px;
+        }
+
+        .demo-callout span {
+            max-width: 126px;
+            font-size: 18px;
+        }
+
+        .demo-callout svg {
+            width: 74px;
+            margin-right: 28px;
+        }
+    }
+
+    @media (max-width: 620px) {
+        .demo-callout {
+            top: -88px;
+            right: 10px;
+        }
+
+        .demo-callout span {
+            font-size: 14px;
+            letter-spacing: -0.03em;
+        }
+
+        .demo-callout svg {
+            width: 52px;
+            margin-right: 20px;
+            stroke-width: 4;
+        }
+    }
+</style>

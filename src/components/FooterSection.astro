@@ -5,7 +5,10 @@ const buttonBase =
     "group relative flex min-h-[64px] items-center justify-center overflow-hidden rounded-3xl px-7 py-4 text-[clamp(15px,1.45vw,20px)] leading-none font-medium tracking-[-0.03em] whitespace-nowrap no-underline [corner-shape:squircle] transition duration-300 ease-out hover:opacity-95 active:scale-[0.99]";
 ---
 
-<footer class="flex w-full flex-col items-center px-5 pt-16 pb-0 sm:pt-[92px]">
+<footer
+    class="flex w-full flex-col items-center px-5 pt-16 pb-0 sm:pt-[92px]"
+    data-motion="section"
+>
     <div class="flex flex-wrap justify-center gap-3">
         <a
             class={`${buttonBase} bg-linear-to-b from-[#3c72f2] to-[#0042cf] text-[#e9fffa]`}
@@ -84,6 +87,8 @@ const buttonBase =
             src="/brand/kompakt-footer-wordmark.svg"
             alt="Kompakt"
             class="w-[min(1277px,150vw)] max-w-none opacity-60 sm:w-[min(1277px,100vw)]"
+            data-motion
+            style="--motion-opacity: 0.6; --motion-y: 24px; --motion-blur: 10px; --motion-delay: 120ms;"
         />
         <p
             class="absolute bottom-7 left-1/2 w-full -translate-x-1/2 text-center text-sm font-medium tracking-tight text-[#4b4b3d] sm:bottom-8 sm:text-base"
