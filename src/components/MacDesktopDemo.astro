@@ -12,40 +12,50 @@ const desktopFiles = [
         thumbnail: "/desktop-examples/alpine-lake.jpg",
         preview: "/desktop-examples/lake-original.jpg",
         kind: "image",
+        format: "jpg",
         originalSize: 4.8,
         compressedSize: 2.9,
+        convertedSizes: { png: 8.7, webp: 2.1 },
     },
     {
         name: "portrait.jpg",
         thumbnail: "/desktop-examples/city-portrait.jpg",
         preview: "/desktop-examples/portrait-original.jpg",
         kind: "image",
+        format: "jpg",
         originalSize: 7.2,
         compressedSize: 4.5,
+        convertedSizes: { png: 12.4, webp: 3.4 },
     },
     {
         name: "studio.jpg",
         thumbnail: "/desktop-examples/studio-shot.jpg",
         preview: "/desktop-examples/studio-original.jpg",
         kind: "image",
+        format: "jpg",
         originalSize: 5.6,
         compressedSize: 3.6,
+        convertedSizes: { png: 9.9, webp: 2.8 },
     },
     {
-        name: "product.mp4",
+        name: "product.mov",
         thumbnail: "/desktop-examples/product-reel.jpg",
         preview: "/desktop-examples/product-reel.mp4",
         kind: "video",
+        format: "mov",
         originalSize: 42.4,
         compressedSize: 28.7,
+        convertedSizes: { mp4: 38.2 },
     },
     {
         name: "launch.mp4",
         thumbnail: "/desktop-examples/launch-clip.jpg",
         preview: "/desktop-examples/launch-clip.mp4",
         kind: "video",
+        format: "mp4",
         originalSize: 24.8,
         compressedSize: 16.9,
+        convertedSizes: {},
     },
 ];
 ---
@@ -101,9 +111,13 @@ const desktopFiles = [
                     class:list={["desktop-file", `desktop-file-${index + 1}`]}
                     data-file-name={file.name}
                     data-file-kind={file.kind}
+                    data-file-format={file.format}
                     data-file-preview={file.preview}
                     data-original-size={file.originalSize}
                     data-compressed-size={file.compressedSize}
+                    data-converted-png-size={file.convertedSizes.png}
+                    data-converted-webp-size={file.convertedSizes.webp}
+                    data-converted-mp4-size={file.convertedSizes.mp4}
                     tabindex="0"
                     role="button"
                     aria-label={`${file.name} file`}
@@ -129,10 +143,22 @@ const desktopFiles = [
     <aside class="dropzone-demo" data-dropzone aria-hidden="true">
         <div class="dropzone-blur" aria-hidden="true"></div>
         <div class="dropzone-bloom" aria-hidden="true"></div>
+        <div class="dropzone-action-layer" aria-hidden="true">
+            <div class="dropzone-action dropzone-action-compress" data-dropzone-action="compress">
+                <span data-compress-label>Kompakt files</span>
+            </div>
+            <div class="dropzone-action dropzone-action-convert" data-dropzone-action="convert">
+                <span data-convert-label>Konvert files</span>
+            </div>
+        </div>
         <div class="dropzone-center">
             <div class="dropzone-preview-stack" data-dropzone-previews></div>
             <div class="dropzone-title" data-dropzone-title>
                 <span>Kompakt files</span>
+            </div>
+            <div class="konvert-targets" data-konvert-targets hidden>
+                <button type="button" data-konvert-target="png">PNG</button>
+                <button type="button" data-konvert-target="webp">WebP</button>
             </div>
             <div
                 class="dropzone-completion"
@@ -191,6 +217,21 @@ const desktopFiles = [
     const dropzoneCompletion = document.querySelector<HTMLElement>(
         "[data-dropzone-completion]",
     );
+    const dropzoneActions = document.querySelectorAll<HTMLElement>(
+        "[data-dropzone-action]",
+    );
+    const compressLabel = document.querySelector<HTMLElement>(
+        "[data-compress-label]",
+    );
+    const convertLabel = document.querySelector<HTMLElement>(
+        "[data-convert-label]",
+    );
+    const konvertTargets = document.querySelector<HTMLElement>(
+        "[data-konvert-targets]",
+    );
+    const konvertTargetButtons = document.querySelectorAll<HTMLButtonElement>(
+        "[data-konvert-target]",
+    );
     const completionPercent = document.querySelector<HTMLElement>(
         "[data-completion-percent]",
     );
@@ -203,6 +244,8 @@ const desktopFiles = [
     let isDropzoneSuppressedForDrag = false;
     let currentDropzonePhase = "idle";
     let currentDropzoneTitle = "Kompakt files";
+    let currentDropzoneAction: "compress" | "convert" = "compress";
+    let currentConversionTarget = "";
     let previewZIndex = 10;
     const successSound = new Audio("/sounds/success.mp3");
     successSound.volume = 0.5;
@@ -323,6 +366,57 @@ const desktopFiles = [
         return { count, noun };
     };
 
+    const getConversionTargets = (files: HTMLElement[]) => {
+        if (files.length === 0) return [];
+
+        const allImages = files.every((file) => file.dataset.fileKind === "image");
+        const allVideos = files.every((file) => file.dataset.fileKind === "video");
+
+        if (!allImages && !allVideos) return [];
+
+        const sourceFormats = new Set(
+            files.map((file) => file.dataset.fileFormat).filter(Boolean),
+        );
+
+        if (allVideos) {
+            const canConvertToMp4 = [...sourceFormats].every((format) =>
+                ["mov", "m4v"].includes(format),
+            );
+
+            return canConvertToMp4 ? ["mp4"] : [];
+        }
+
+        const targets = ["png", "webp"].filter(
+            (target) => !sourceFormats.has(target),
+        );
+
+        return targets;
+    };
+
+    const isConversionAvailable = (files: HTMLElement[]) =>
+        getConversionTargets(files).length > 0;
+
+    const formatTargetName = (target: string) =>
+        target === "webp" ? "WebP" : target.toUpperCase();
+
+    const getConvertLabel = (files: HTMLElement[]) => {
+        const targets = getConversionTargets(files);
+        const summary = summarizeFiles(files);
+
+        if (targets.length === 1)
+            return `Konvert to ${formatTargetName(targets[0])}`;
+        return `Konvert ${summary.noun}`;
+    };
+
+    const updateActionLabels = (files: HTMLElement[]) => {
+        const summary = summarizeFiles(files);
+        const conversionAvailable = isConversionAvailable(files);
+
+        if (compressLabel) compressLabel.textContent = `Kompakt ${summary.noun}`;
+        if (convertLabel) convertLabel.textContent = getConvertLabel(files);
+        dropzone?.classList.toggle("has-conversion", conversionAvailable);
+    };
+
     const renderDropzonePreviews = (files: HTMLElement[]) => {
         if (!dropzonePreviews) return;
 
@@ -370,28 +464,48 @@ const desktopFiles = [
         return `${value.toFixed(1)} MB`;
     };
 
-    const updateCompletionSummary = (files: HTMLElement[]) => {
+    const updateCompletionSummary = (
+        files: HTMLElement[],
+        action: "compress" | "convert",
+        target = "webp",
+    ) => {
         const originalSize = files.reduce(
             (total, file) => total + Number(file.dataset.originalSize ?? 0),
             0,
         );
-        const compressedSize = files.reduce(
-            (total, file) => total + Number(file.dataset.compressedSize ?? 0),
-            0,
-        );
+        const outputSize =
+            action === "convert"
+                ? files.reduce(
+                      (total, file) =>
+                          total +
+                          Number(
+                              file.dataset[
+                                  `converted${target[0].toUpperCase()}${target.slice(1)}Size` as keyof DOMStringMap
+                              ] ?? file.dataset.compressedSize ?? 0,
+                          ),
+                      0,
+                  )
+                : files.reduce(
+                      (total, file) =>
+                          total + Number(file.dataset.compressedSize ?? 0),
+                      0,
+                  );
         const percentSmaller =
             originalSize > 0
                 ? Math.round(
-                      ((originalSize - compressedSize) / originalSize) * 100,
+                      ((originalSize - outputSize) / originalSize) * 100,
                   )
                 : 0;
 
         if (completionPercent) {
-            completionPercent.textContent = `${percentSmaller}% smaller`;
+            completionPercent.textContent =
+                action === "convert"
+                    ? `Konverted to ${formatTargetName(target)}`
+                    : `${percentSmaller}% smaller`;
         }
 
         if (completionSize) {
-            completionSize.textContent = `${formatMegabytes(originalSize)} -> ${formatMegabytes(compressedSize)}`;
+            completionSize.textContent = `${formatMegabytes(originalSize)} -> ${formatMegabytes(outputSize)}`;
         }
     };
 
@@ -448,7 +562,7 @@ const desktopFiles = [
     };
 
     const setDropzonePhase = (
-        phase: "idle" | "targeted" | "processing" | "finished",
+        phase: "idle" | "targeted" | "choosing" | "processing" | "finished",
         files = activeDropFiles,
     ) => {
         if (!dropzone || !dropzoneTitle || !dropzoneCompletion) return;
@@ -457,20 +571,32 @@ const desktopFiles = [
         const oldPhase = currentDropzonePhase;
         currentDropzonePhase = phase;
         dropzone.dataset.phase = phase;
+        if (phase !== "choosing") {
+            konvertTargets?.setAttribute("hidden", "");
+        }
         dropzoneCompletion.setAttribute(
             "aria-hidden",
             phase === "finished" ? "false" : "true",
         );
 
         const shouldShowPreview =
-            phase === "processing" || phase === "finished";
+            phase === "choosing" ||
+            phase === "processing" ||
+            phase === "finished";
         dropzonePreviews?.toggleAttribute("hidden", !shouldShowPreview);
         requestAnimationFrame(() => {
             dropzonePreviews?.classList.toggle("is-visible", shouldShowPreview);
         });
 
         if (phase === "processing") {
-            setDropzoneTitle(`Kompakting ${summary.noun}`, true);
+            setDropzoneTitle(
+                currentDropzoneAction === "convert"
+                    ? currentConversionTarget
+                        ? `Konverting to ${formatTargetName(currentConversionTarget)}`
+                        : `Konverting ${summary.noun}`
+                    : `Kompakting ${summary.noun}`,
+                true,
+            );
         } else if (phase === "finished") {
             setDropzoneTitle("");
         } else {
@@ -479,6 +605,7 @@ const desktopFiles = [
 
         if (oldPhase !== phase && phase === "finished") {
             playSuccessSound();
+            konvertTargets?.setAttribute("hidden", "");
             dropzoneCompletion.classList.remove("is-visible");
             window.setTimeout(() => {
                 dropzoneCompletion.classList.add("is-visible");
@@ -496,6 +623,7 @@ const desktopFiles = [
         activeDropFiles = files;
         dropzone.classList.add("is-visible");
         dropzone.setAttribute("aria-hidden", "false");
+        updateActionLabels(files);
         renderDropzonePreviews(files);
         setDropzonePhase("idle", files);
     };
@@ -504,10 +632,12 @@ const desktopFiles = [
         if (!dropzone) return;
 
         activeDropFiles = [];
-        dropzone.classList.remove("is-visible", "is-targeted");
+        dropzone.classList.remove("is-visible", "is-targeted", "has-conversion");
         dropzone.setAttribute("aria-hidden", "true");
         dropzone.dataset.phase = "idle";
         currentDropzonePhase = "idle";
+        currentDropzoneAction = "compress";
+        currentConversionTarget = "";
         currentDropzoneTitle = "Kompakt files";
         if (dropzoneTitle) {
             dropzoneTitle.replaceChildren();
@@ -516,6 +646,7 @@ const desktopFiles = [
             dropzoneTitle.append(title);
         }
         dropzonePreviews?.classList.remove("is-visible");
+        konvertTargets?.setAttribute("hidden", "");
         dropzoneCompletion?.classList.remove("is-visible");
         dropzoneCompletion?.setAttribute("aria-hidden", "true");
         window.clearTimeout(dropzoneDismissTimer);
@@ -533,27 +664,62 @@ const desktopFiles = [
         );
     };
 
+    const getDropzoneAction = (
+        event: PointerEvent,
+        files = activeDropFiles,
+    ): "compress" | "convert" => {
+        if (!dropzone || !isConversionAvailable(files)) {
+            return "compress";
+        }
+
+        const rect = dropzone.getBoundingClientRect();
+        const isBottomHalf = event.clientY - rect.top >= rect.height / 2;
+        return isBottomHalf ? "convert" : "compress";
+    };
+
     const updateDropzoneTarget = (event: PointerEvent) => {
         if (!dropzone?.classList.contains("is-visible")) return;
 
         const targeted = isOverDropzone(event);
+        currentDropzoneAction = targeted ? getDropzoneAction(event) : "compress";
         dropzone.classList.toggle("is-targeted", targeted);
-        if (targeted && dropzoneTitle) {
+        dropzone.dataset.targetAction = currentDropzoneAction;
+        dropzoneActions.forEach((action) => {
+            const isHovered =
+                targeted && action.dataset.dropzoneAction === currentDropzoneAction;
+            action.classList.toggle("is-hovered", isHovered);
+
+            if (!isHovered) {
+                action.style.setProperty("--magnet-x", "0px");
+                action.style.setProperty("--magnet-y", "0px");
+            }
+        });
+
+        if (targeted) {
             const rect = dropzone.getBoundingClientRect();
+            const actionRect =
+                currentDropzoneAction === "convert"
+                    ? {
+                          top: rect.top + rect.height / 2,
+                          height: rect.height / 2,
+                      }
+                    : { top: rect.top, height: rect.height / 2 };
             const normalizedX =
                 ((event.clientX - rect.left) / Math.max(rect.width, 1) - 0.5) *
                 2;
             const normalizedY =
-                ((event.clientY - rect.top) / Math.max(rect.height, 1) - 0.5) *
+                ((event.clientY - actionRect.top) /
+                    Math.max(actionRect.height, 1) -
+                    0.5) *
                 2;
             const offsetX = normalizedX * 38 + Math.max(0, normalizedX) * 8;
             const offsetY = normalizedY * 32;
+            const action = Array.from(dropzoneActions).find(
+                (item) => item.dataset.dropzoneAction === currentDropzoneAction,
+            );
 
-            dropzoneTitle.style.setProperty("--magnet-x", `${offsetX}px`);
-            dropzoneTitle.style.setProperty("--magnet-y", `${offsetY}px`);
-        } else if (dropzoneTitle) {
-            dropzoneTitle.style.setProperty("--magnet-x", "0px");
-            dropzoneTitle.style.setProperty("--magnet-y", "0px");
+            action?.style.setProperty("--magnet-x", `${offsetX}px`);
+            action?.style.setProperty("--magnet-y", `${offsetY}px`);
         }
         setDropzonePhase(targeted ? "targeted" : "idle");
     };
@@ -562,11 +728,16 @@ const desktopFiles = [
         if (!dropzone) return;
         if (isDropzoneSuppressedForDrag) return;
 
+        currentDropzoneAction = "compress";
+        currentConversionTarget = "";
         dropzone.classList.remove("is-targeted");
-        dropzoneTitle?.style.setProperty("--magnet-x", "0px");
-        dropzoneTitle?.style.setProperty("--magnet-y", "0px");
+        dropzoneActions.forEach((action) => {
+            action.classList.remove("is-hovered");
+            action.style.setProperty("--magnet-x", "0px");
+            action.style.setProperty("--magnet-y", "0px");
+        });
         renderDropzonePreviews(files);
-        updateCompletionSummary(files);
+        updateCompletionSummary(files, "compress");
         setDropzonePhase("processing", files);
 
         window.clearTimeout(dropzoneDismissTimer);
@@ -577,6 +748,61 @@ const desktopFiles = [
                 hideDropzone();
             }, 2400);
         }, 2900);
+    };
+
+    const simulateDropzoneConversion = (files: HTMLElement[], target: string) => {
+        if (!dropzone) return;
+        if (isDropzoneSuppressedForDrag) return;
+
+        currentDropzoneAction = "convert";
+        currentConversionTarget = target;
+        dropzone.classList.remove("is-targeted");
+        dropzoneActions.forEach((action) => {
+            action.classList.remove("is-hovered");
+            action.style.setProperty("--magnet-x", "0px");
+            action.style.setProperty("--magnet-y", "0px");
+        });
+        konvertTargets?.setAttribute("hidden", "");
+        renderDropzonePreviews(files);
+        updateCompletionSummary(files, "convert", target);
+        setDropzonePhase("processing", files);
+
+        window.clearTimeout(dropzoneDismissTimer);
+        dropzoneDismissTimer = window.setTimeout(() => {
+            setDropzonePhase("finished", files);
+
+            dropzoneDismissTimer = window.setTimeout(() => {
+                hideDropzone();
+            }, 2400);
+        }, 2900);
+    };
+
+    const showKonvertTargets = (files: HTMLElement[]) => {
+        const targets = getConversionTargets(files);
+
+        if (!konvertTargets) return;
+        if (targets.length === 0) {
+            simulateDropzoneCompression(files);
+            return;
+        }
+        if (targets.length === 1) {
+            simulateDropzoneConversion(files, targets[0]);
+            return;
+        }
+
+        dropzone?.classList.remove("is-targeted");
+        setDropzonePhase("choosing", files);
+        renderDropzonePreviews(files);
+        dropzonePreviews?.removeAttribute("hidden");
+        dropzonePreviews?.classList.add("is-visible");
+        dropzoneCompletion?.classList.remove("is-visible");
+        setDropzoneTitle("Konvert to");
+        konvertTargetButtons.forEach((button) => {
+            const target = button.dataset.konvertTarget ?? "";
+            button.hidden = !targets.includes(target);
+            button.onclick = () => simulateDropzoneConversion(files, target);
+        });
+        konvertTargets.removeAttribute("hidden");
     };
 
     const getMediaSize = (source: HTMLImageElement | HTMLVideoElement) => {
@@ -1105,6 +1331,9 @@ const desktopFiles = [
                 if (upEvent.pointerId !== pointerEvent.pointerId) return;
 
                 const droppedOnDropzone = didDrag && isOverDropzone(upEvent);
+                const droppedAction = droppedOnDropzone
+                    ? getDropzoneAction(upEvent, draggedFiles)
+                    : "compress";
                 draggedFiles.forEach((draggedFile) =>
                     draggedFile.classList.remove("is-dragging"),
                 );
@@ -1112,7 +1341,11 @@ const desktopFiles = [
 
                 if (droppedOnDropzone) {
                     animateDragProxiesHome(() => {
-                        simulateDropzoneCompression(draggedFiles);
+                        if (droppedAction === "convert") {
+                            showKonvertTargets(draggedFiles);
+                        } else {
+                            simulateDropzoneCompression(draggedFiles);
+                        }
                     });
                 } else if (didDrag) {
                     dragStarts.forEach((item, index) => {
@@ -1600,7 +1833,7 @@ const desktopFiles = [
     }
 
     .dropzone-demo.is-targeted::after {
-        opacity: 1;
+        opacity: 0.4;
         filter: blur(12px);
         animation: dropzone-breathe 1.7s ease-in-out infinite alternate;
     }
@@ -1627,7 +1860,7 @@ const desktopFiles = [
 
     .dropzone-center {
         position: relative;
-        z-index: 4;
+        z-index: 5;
         height: 100%;
         display: grid;
         align-content: center;
@@ -1635,6 +1868,93 @@ const desktopFiles = [
         padding-inline: 18px;
         color: white;
         text-align: center;
+        pointer-events: none;
+    }
+
+    .dropzone-action-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: grid;
+        grid-template-rows: 1fr;
+        color: white;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .dropzone-demo.has-conversion .dropzone-action-layer {
+        grid-template-rows: 1fr 1fr;
+    }
+
+    .dropzone-action {
+        --magnet-x: 0px;
+        --magnet-y: 0px;
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .dropzone-action::before {
+        content: "";
+        position: absolute;
+        inset: -14%;
+        background: radial-gradient(
+            circle at 72% 50%,
+            rgba(255, 255, 255, 0.2),
+            rgba(255, 255, 255, 0.08) 28%,
+            transparent 62%
+        );
+        opacity: 0;
+        filter: blur(14px);
+        transition:
+            opacity 150ms ease,
+            filter 150ms ease;
+    }
+
+    .dropzone-action.is-hovered::before {
+        opacity: 1;
+        filter: blur(9px);
+    }
+
+    .dropzone-action span {
+        position: relative;
+        z-index: 1;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 24px;
+        letter-spacing: 0;
+        white-space: nowrap;
+        transform: translate(var(--magnet-x), var(--magnet-y));
+        transition:
+            color 150ms ease,
+            transform 240ms cubic-bezier(0.2, 0.8, 0.22, 1);
+    }
+
+    .dropzone-action.is-hovered span {
+        color: white;
+        transform: translate(var(--magnet-x), var(--magnet-y)) scale(1.16);
+    }
+
+    .dropzone-action-convert {
+        display: none;
+    }
+
+    .dropzone-demo.has-conversion .dropzone-action-convert {
+        display: grid;
+    }
+
+    .dropzone-demo[data-phase="choosing"] .dropzone-action-layer,
+    .dropzone-demo[data-phase="processing"] .dropzone-action-layer,
+    .dropzone-demo[data-phase="finished"] .dropzone-action-layer {
+        opacity: 0;
+    }
+
+    .dropzone-demo[data-phase="idle"] .dropzone-title,
+    .dropzone-demo[data-phase="targeted"] .dropzone-title {
+        opacity: 0;
     }
 
     .dropzone-preview-stack {
@@ -1860,6 +2180,50 @@ const desktopFiles = [
         color: rgba(255, 255, 255, 0.72);
         font-size: 13px;
         font-weight: 500;
+    }
+
+    .konvert-targets {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 14px;
+        pointer-events: auto;
+        opacity: 1;
+        transform: scale(1);
+        transition:
+            opacity 180ms ease,
+            transform 180ms ease;
+    }
+
+    .konvert-targets[hidden] {
+        display: none;
+    }
+
+    .konvert-targets button {
+        min-width: 56px;
+        height: 34px;
+        padding: 0 13px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 11px;
+        color: rgba(255, 255, 255, 0.92);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 650;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(16px);
+        cursor: pointer;
+        transition:
+            background 160ms ease,
+            transform 160ms ease,
+            border-color 160ms ease;
+    }
+
+    .konvert-targets button:hover,
+    .konvert-targets button:focus-visible {
+        border-color: rgba(255, 255, 255, 0.36);
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        transform: translateY(-1px);
     }
 
     .escape-hint {

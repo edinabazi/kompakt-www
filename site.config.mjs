@@ -1,10 +1,10 @@
 export const site = {
   name: "Kompakt",
   url: "https://kompaktapp.com",
-  title: "Kompakt - Free, Instant Media Compression for macOS",
+  title: "Kompakt - Free Media Compression and Conversion for macOS",
   description:
-    "Kompakt is a lightweight macOS app for quickly compressing images and videos with a native drag-and-drop workflow.",
-  tagline: "Instant media compression for macOS.",
+    "Kompakt is a lightweight macOS app for quickly compressing and converting images and videos with a native drag-and-drop workflow.",
+  tagline: "Instant media compression and conversion for macOS.",
   themeColor: "#f4f1ea",
   githubUrl: "https://github.com/edinabazi/Kompakt",
   downloadUrl:
